@@ -42,6 +42,11 @@ StyledRect {
             name: "battery",
             item: batteryIcon,
             enabled: Config.bar.status.showBattery
+        },
+        {
+            name: "kblayout",
+            item: kblayoutIcon,
+            enabled: Config.bar.status.showKbLayout
         }
     ]
     color: Colours.tPalette.m3surfaceContainer
@@ -96,6 +101,7 @@ StyledRect {
 
         // Keyboard layout icon
         WrappedLoader {
+            id: kblayoutIcon
             name: "kblayout"
             active: Config.bar.status.showKbLayout
 
