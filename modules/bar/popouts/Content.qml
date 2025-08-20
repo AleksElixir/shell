@@ -4,6 +4,7 @@ import qs.config
 import Quickshell
 import Quickshell.Services.SystemTray
 import QtQuick
+import "Calendars"
 
 Item {
     id: root
@@ -48,6 +49,28 @@ Item {
         Popout {
             name: "audio"
             sourceComponent: Audio {
+                wrapper: root.wrapper
+            }
+        }
+
+        // Merge: calendar popouts and notifications, plus kblayout from main
+        Popout {
+            name: "calendar-advanced"
+            sourceComponent: Loader {
+                source: "Calendars/Advanced.qml"
+            }
+        }
+
+        Popout {
+            name: "calendar-simple"
+            sourceComponent: Loader {
+                source: "Calendars/Simple.qml"
+            }
+        }
+
+        Popout {
+            name: "notifications"
+            sourceComponent: Notifications {
                 wrapper: root.wrapper
             }
         }

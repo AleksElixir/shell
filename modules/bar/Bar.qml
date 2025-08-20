@@ -18,37 +18,58 @@ ColumnLayout {
     readonly property int vPadding: Appearance.padding.large
 
     function checkPopout(y: real): void {
-        const ch = childAt(width / 2, y) as WrappedLoader;
-        if (!ch) {
-            popouts.hasCurrent = false;
-            return;
+        // Use the more explicit and feature-rich Merge2 logic for popout detection
+        const spacing = Appearance.spacing.small;
+        const aw = activeWindow.child;
+        const awy = activeWindow.y + aw.y;
+
+        const ty = tray.y;
+        const th = tray.implicitHeight;
+        const trayItems = tray.items;
+
+        const clockY = clock.y;
+        const clockHeight = clock.implicitHeight;
+
+        // Check status icons hover areas
+        let statusIconFound = false;
+        for (const area of statusIconsInner.hoverAreas) {
+            if (!area.enabled)
+                continue;
+
+            const item = area.item;
+            const itemY = statusIcons.y + statusIconsInner.y + item.y - spacing / 2;
+            const itemHeight = item.implicitHeight + spacing;
+
+            if (y >= itemY && y <= itemY + itemHeight) {
+                popouts.currentName = area.name;
+                popouts.currentCenter = Qt.binding(() => statusIcons.y + statusIconsInner.y + item.y + item.implicitHeight / 2);
+                popouts.hasCurrent = true;
+                statusIconFound = true;
+                break;
+            }
         }
 
-        const id = ch.id;
-        const top = ch.y;
-        const item = ch.item;
-        const itemHeight = item.implicitHeight;
-
-        if (id === "statusIcons") {
-            const items = item.items;
-            const icon = items.childAt(items.width / 2, mapToItem(items, 0, y).y);
-            if (icon) {
-                popouts.currentName = icon.name;
-                popouts.currentCenter = Qt.binding(() => icon.mapToItem(root, 0, icon.implicitHeight / 2).y);
-                popouts.hasCurrent = true;
-            }
-        } else if (id === "tray") {
-            const index = Math.floor(((y - top) / itemHeight) * item.items.count);
-            const trayItem = item.items.itemAt(index);
-            if (trayItem) {
-                popouts.currentName = `traymenu${index}`;
-                popouts.currentCenter = Qt.binding(() => trayItem.mapToItem(root, 0, trayItem.implicitHeight / 2).y);
-                popouts.hasCurrent = true;
-            }
-        } else if (id === "activeWindow") {
-            popouts.currentName = id.toLowerCase();
-            popouts.currentCenter = item.mapToItem(root, 0, itemHeight / 2).y;
+        if (y >= awy && y <= awy + aw.implicitHeight) {
+            popouts.currentName = "activewindow";
+            popouts.currentCenter = Qt.binding(() => activeWindow.y + aw.y + aw.implicitHeight / 2);
             popouts.hasCurrent = true;
+
+        } else if (y >= clockY && y <= clockY + clockHeight && Config.bar.clock.showCalendar) {
+            const style = Config.bar.clock.style || "advanced";
+            popouts.currentName = style === "simple" ? "calendar-simple" : "calendar-advanced";
+            popouts.currentCenter = Qt.binding(() => clock.y + clock.implicitHeight / 2);
+            popouts.hasCurrent = true;
+
+        } else if (y > ty && y < ty + th) {
+            const index = Math.floor(((y - ty) / th) * trayItems.count);
+            const item = trayItems.itemAt(index);
+
+            popouts.currentName = `traymenu${index}`;
+            popouts.currentCenter = Qt.binding(() => tray.y + item.y + item.implicitHeight / 2);
+            popouts.hasCurrent = true;
+            
+        } else if (!statusIconFound) {
+            popouts.hasCurrent = false;
         }
     }
 
@@ -75,6 +96,30 @@ ColumnLayout {
                 monitor.setBrightness(monitor.brightness + 0.1);
             else if (angleDelta.y < 0)
                 monitor.setBrightness(monitor.brightness - 0.1);
+        }
+    }
+
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+
+    implicitWidth: child.implicitWidth + Config.border.thickness * 2
+
+    Item {
+        id: child
+
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+
+        implicitWidth: Math.max(osIcon.implicitWidth, workspaces.implicitWidth, activeWindow.implicitWidth, tray.implicitWidth, clock.implicitWidth, statusIcons.implicitWidth, power.implicitWidth)
+
+        OsIcon {
+            id: osIcon
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: Appearance.padding.large
         }
     }
 
