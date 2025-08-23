@@ -26,6 +26,7 @@
   rubik,
   nerd-fonts,
   gcc,
+  qt6,
   quickshell,
   aubio,
   pipewire,
@@ -66,8 +67,8 @@ in
     version = "${rev}";
     src = ./..;
 
-    nativeBuildInputs = [gcc makeWrapper];
-    buildInputs = [quickshell aubio pipewire];
+    nativeBuildInputs = [gcc makeWrapper qt6.wrapQtAppsHook];
+    buildInputs = [quickshell aubio pipewire qt6.qtbase];
     propagatedBuildInputs = runtimeDeps;
 
     buildPhase = ''
