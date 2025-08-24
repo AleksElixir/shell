@@ -106,11 +106,7 @@ Item {
             }
 
             Behavior on strokeColor {
-                ColorAnimation {
-                    duration: Appearance.anim.durations.normal
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Appearance.anim.curves.standard
-                }
+                CAnim {}
             }
         }
     }
@@ -372,7 +368,7 @@ Item {
                     StyledText {
                         Layout.fillWidth: true
                         Layout.maximumWidth: playerSelector.implicitWidth - implicitHeight - parent.spacing - Appearance.padding.normal * 2
-                        text: Players.active?.identity ?? "No players"
+                        text: Players.active ? Players.getIdentity(Players.active) : qsTr("No players")
                         color: Players.active ? Colours.palette.m3onSurface : Colours.palette.m3onSurfaceVariant
                         elide: Text.ElideRight
                     }
@@ -444,7 +440,7 @@ Item {
                                     }
 
                                     StyledText {
-                                        text: player.modelData.identity
+                                        text: Players.getIdentity(player.modelData)
                                         color: Colours.palette.m3onSecondaryContainer
                                     }
                                 }
@@ -578,11 +574,5 @@ Item {
             color: control.canUse ? Colours.palette.m3onSurface : Colours.palette.m3outline
             font.pointSize: control.fontSize
         }
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }
