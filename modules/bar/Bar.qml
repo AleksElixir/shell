@@ -93,12 +93,13 @@ ColumnLayout {
     function handleWheel(y: real, angleDelta: point): void {
         const ch = childAt(width / 2, y) as WrappedLoader;
         if (ch?.id === "workspaces") {
-            const mon = (Config.bar.workspaces.perMonitorWorkspaces ? Hyprland.monitorFor(screen) : Hyprland.focusedMonitor);
+            // Workspace scroll
+            const mon = (Config.bar.workspaces.perMonitorWorkspaces ? Hypr.monitorFor(screen) : Hypr.focusedMonitor);
             const specialWs = mon?.lastIpcObject.specialWorkspace.name;
             if (specialWs?.length > 0)
-                Hyprland.dispatch(`togglespecialworkspace ${specialWs.slice(8)}`);
-            else if (angleDelta.y < 0 || (Config.bar.workspaces.perMonitorWorkspaces ? mon.activeWorkspace?.id : Hyprland.activeWsId) > 1)
-                Hyprland.dispatch(`workspace r${angleDelta.y > 0 ? "-" : "+"}1`);
+                Hypr.dispatch(`togglespecialworkspace ${specialWs.slice(8)}`);
+            else if (angleDelta.y < 0 || (Config.bar.workspaces.perMonitorWorkspaces ? mon.activeWorkspace?.id : Hypr.activeWsId) > 1)
+                Hypr.dispatch(`workspace r${angleDelta.y > 0 ? "-" : "+"}1`);
         } else if (y < screen.height / 2) {
             if (angleDelta.y > 0)
                 Audio.incrementVolume();
@@ -194,6 +195,12 @@ ColumnLayout {
                     sourceComponent: Power {
                         visibilities: root.visibilities
                     }
+                }
+            }
+            DelegateChoice {
+                roleValue: "idleInhibitor"
+                delegate: WrappedLoader {
+                    sourceComponent: IdleInhibitor {}
                 }
             }
         }

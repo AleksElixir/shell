@@ -48,6 +48,10 @@ JsonObject {
             id: "power",
             enabled: true
         },
+        {
+            id: "idleInhibitor",
+            enabled: false
+        }
     ]
 
     component Clock: JsonObject {

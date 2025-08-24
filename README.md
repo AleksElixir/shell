@@ -237,6 +237,10 @@ All configuration options are in `~/.config/caelestia/shell.json`.
    	        {
    	            "id": "power",
    	            "enabled": true
+   	        },
+   	        {
+   	            "id": "idleInhibitor",
+   	            "enabled": false
    	        }
         ],
         "persistent": true,
@@ -316,6 +320,10 @@ All configuration options are in `~/.config/caelestia/shell.json`.
     },
     "services": {
         "audioIncrement": 0.1,
+        "defaultPlayer": "Spotify",
+        "playerAliases": [{
+            "com.github.th_ch.youtube_music": "YT Music"
+        }],
         "weatherLocation": "10,10",
         "useFahrenheit": false,
         "useTwelveHourClock": false,
