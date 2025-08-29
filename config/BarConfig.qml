@@ -10,8 +10,6 @@ JsonObject {
     property Clock clock: Clock {}
     property Sizes sizes: Sizes {}
 
-    property Clock clock: Clock {}
-
     property list<var> entries: [
         {
             id: "logo",
@@ -58,6 +56,7 @@ JsonObject {
     component Clock: JsonObject {
         property bool showCalendar: true
         property string style: "modern"  // Options: "modern", "simple"
+        property bool showIcon: true
     }
 
     component Workspaces: JsonObject {
@@ -84,10 +83,6 @@ JsonObject {
         property bool showNetwork: true
         property bool showBluetooth: true
         property bool showBattery: true
-    }
-
-    component Clock: JsonObject {
-        property bool showIcon: true
     }
 
     component Sizes: JsonObject {
