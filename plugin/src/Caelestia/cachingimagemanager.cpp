@@ -1,14 +1,13 @@
 #include "cachingimagemanager.hpp"
 
-#include <QCryptographicHash>
-#include <QDir>
-#include <QFile>
-#include <QImageReader>
-#include <QObject>
-#include <QPainter>
-#include <QThreadPool>
+#include <qobject.h>
 #include <QtQuick/QQuickItem>
 #include <QtQuick/QQuickWindow>
+#include <QCryptographicHash>
+#include <QThreadPool>
+#include <QFile>
+#include <QDir>
+#include <QPainter>
 
 qreal CachingImageManager::effectiveScale() const {
     if (m_item && m_item->window()) {
@@ -18,15 +17,24 @@ qreal CachingImageManager::effectiveScale() const {
     return 1.0;
 }
 
-QSize CachingImageManager::effectiveSize() const {
+int CachingImageManager::effectiveWidth() const {
     if (!m_item) {
-        return QSize();
+        return 0;
     }
 
-    const qreal scale = effectiveScale();
-    const QSize size = QSizeF(m_item->width() * scale, m_item->height() * scale).toSize();
-    m_item->setProperty("sourceSize", size);
-    return size;
+    int width = std::ceil(m_item->width() * effectiveScale());
+    m_item->setProperty("sourceWidth", width);
+    return width;
+}
+
+int CachingImageManager::effectiveHeight() const {
+    if (!m_item) {
+        return 0;
+    }
+
+    int height = std::ceil(m_item->height() * effectiveScale());
+    m_item->setProperty("sourceHeight", height);
+    return height;
 }
 
 QQuickItem* CachingImageManager::item() const {
@@ -49,12 +57,8 @@ void CachingImageManager::setItem(QQuickItem* item) {
     emit itemChanged();
 
     if (item) {
-        m_widthConn = connect(item, &QQuickItem::widthChanged, this, [this]() {
-            updateSource();
-        });
-        m_heightConn = connect(item, &QQuickItem::heightChanged, this, [this]() {
-            updateSource();
-        });
+        m_widthConn = connect(item, &QQuickItem::widthChanged, this, [this]() { updateSource(); });
+        m_heightConn = connect(item, &QQuickItem::heightChanged, this, [this]() { updateSource(); });
         updateSource();
     }
 }
@@ -104,58 +108,55 @@ void CachingImageManager::updateSource(const QString& path) {
 
     m_shaPath = path;
 
-    const QPointer<CachingImageManager> self(this);
+    QPointer<CachingImageManager> self(this);
     QThreadPool::globalInstance()->start([path, self] {
         const QString sha = self->sha256sum(path);
 
-        QMetaObject::invokeMethod(
-            self,
-            [path, sha, self]() {
-                if (!self || self->m_path != path) {
-                    // Object is destroyed or path has changed, ignore
-                    return;
-                }
+        QMetaObject::invokeMethod(self, [path, sha, self]() {
+            if (!self || self->m_path != path) {
+                // Object is destroyed or path has changed, ignore
+                return;
+            }
 
-                const QSize size = self->effectiveSize();
+            int width = self->effectiveWidth();
+            int height = self->effectiveHeight();
 
-                if (!self->m_item || !size.width() || !size.height()) {
-                    return;
-                }
+            if (!self->m_item || !width || !height) {
+                return;
+            }
 
-                const QString fillMode = self->m_item->property("fillMode").toString();
-                // clang-format off
-                const QString filename = QString("%1@%2x%3-%4.png")
-                    .arg(sha).arg(size.width()).arg(size.height())
-                    .arg(fillMode == "PreserveAspectCrop" ? "crop" : fillMode == "PreserveAspectFit" ? "fit" : "stretch");
-                // clang-format on
+            const QString fillMode = self->m_item->property("fillMode").toString();
+            const QString filename = QString("%1@%2x%3-%4.png")
+                .arg(sha).arg(width).arg(height)
+                .arg(fillMode == "PreserveAspectCrop" ? "crop" : fillMode == "PreserveAspectFit" ? "fit" : "stretch");
 
-                const QUrl cache = self->m_cacheDir.resolved(QUrl(filename));
-                if (self->m_cachePath == cache) {
-                    return;
-                }
+            const QUrl cache = self->m_cacheDir.resolved(QUrl(filename));
+            if (self->m_cachePath == cache) {
+                return;
+            }
 
-                self->m_cachePath = cache;
-                emit self->cachePathChanged();
+            self->m_cachePath = cache;
+            emit self->cachePathChanged();
 
-                if (!cache.isLocalFile()) {
-                    qWarning() << "CachingImageManager::updateSource: cachePath" << cache << "is not a local file";
-                    return;
-                }
+            if (!cache.isLocalFile()) {
+                qWarning() << "CachingImageManager::updateSource: cachePath" << cache << "is not a local file";
+                return;
+            }
 
-                const QImageReader reader(cache.toLocalFile());
-                if (reader.canRead()) {
-                    self->m_item->setProperty("source", cache);
-                } else {
-                    self->m_item->setProperty("source", QUrl::fromLocalFile(path));
-                    self->createCache(path, cache.toLocalFile(), fillMode, size);
-                }
+            bool cacheExists = QFile::exists(cache.toLocalFile());
 
-                // Clear current running sha if same
-                if (self->m_shaPath == path) {
-                    self->m_shaPath = QString();
-                }
-            },
-            Qt::QueuedConnection);
+            if (cacheExists) {
+                self->m_item->setProperty("source", cache);
+            } else {
+                self->m_item->setProperty("source", QUrl::fromLocalFile(path));
+                self->createCache(path, cache.toLocalFile(), fillMode, QSize(width, height));
+            }
+
+            // Clear current running sha if same
+            if (self->m_shaPath == path) {
+                self->m_shaPath = QString();
+            }
+        }, Qt::QueuedConnection);
     });
 }
 
@@ -163,8 +164,7 @@ QUrl CachingImageManager::cachePath() const {
     return m_cachePath;
 }
 
-void CachingImageManager::createCache(
-    const QString& path, const QString& cache, const QString& fillMode, const QSize& size) const {
+void CachingImageManager::createCache(const QString& path, const QString& cache, const QString& fillMode, const QSize& size) const {
     QThreadPool::globalInstance()->start([path, cache, fillMode, size] {
         QImage image(path);
 

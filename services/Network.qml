@@ -12,6 +12,8 @@ Singleton {
     property bool wifiEnabled: true
     readonly property bool scanning: rescanProc.running
 
+    reloadableId: "network"
+
     function enableWifi(enabled: bool): void {
         const cmd = enabled ? "on" : "off";
         enableWifiProc.exec(["nmcli", "radio", "wifi", cmd]);

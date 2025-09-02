@@ -213,17 +213,13 @@ For NixOS users, a home manager module is also available.
 ```nix
 programs.caelestia = {
   enable = true;
-  systemd = {
-    enable = false; # if you prefer starting from your compositor
-    target = "graphical-session.target";
-  };
+  systemd.enable = false; # if you prefer starting from your compositor
   settings = {
     bar.status = {
       showBattery = false;
     };
     paths.wallpaperDir = "~/Images";
   };
-  environment = [];
   cli = {
     enable = true; # Also add caelestia-cli to path
     settings = {
@@ -297,7 +293,9 @@ The module automatically adds Caelestia shell to the path with **full functional
     },
     "bar": {
         "clock": {
-            "showIcon": true
+            "showIcon": true,
+            "showCalendar": true,
+            "calendarStyle": "simple"
         },
         "dragThreshold": 20,
         "entries": [
@@ -344,10 +342,6 @@ The module automatically adds Caelestia shell to the path with **full functional
         ],
         "persistent": true,
         "showOnHover": true,
-        "clock": {
-            "showCalendar": true,
-            "style": "simple"
-        },
         "status": {
             "showAudio": false,
             "showBattery": true,

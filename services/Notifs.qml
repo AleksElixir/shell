@@ -15,6 +15,7 @@ Singleton {
     readonly property list<Notif> popups: list.filter(n => n.popup)
     
     property bool dnd: false
+    property int refCount: 0
     
     function toggleDnd(): void {
         dnd = !dnd

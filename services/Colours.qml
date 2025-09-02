@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 
 import qs.config
 import qs.utils
-import Caelestia
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -22,7 +21,7 @@ Singleton {
     readonly property M3Palette current: M3Palette {}
     readonly property M3Palette preview: M3Palette {}
     readonly property Transparency transparency: Transparency {}
-    property real wallLuminance
+    readonly property color wallColour: quantizer.colors[0] ?? "black"
 
     function getLuminance(c: color): real {
         if (c.r == 0 && c.g == 0 && c.b == 0)
@@ -31,6 +30,7 @@ Singleton {
     }
 
     function alterColour(c: color, a: real, layer: int): color {
+        const wallLuminance = getLuminance(wallColour);
         const luminance = getLuminance(c);
 
         const offset = (!light || layer == 1 ? 1 : -layer / 2) * (light ? 0.2 : 0.3) * (1 - transparency.base) * (1 + wallLuminance * (light ? (layer == 1 ? 3 : 1) : 2.5));
@@ -85,16 +85,12 @@ Singleton {
         onLoaded: root.load(text(), false)
     }
 
-    Connections {
-        target: Wallpapers
+    ColorQuantizer {
+        id: quantizer
 
-        function onCurrentChanged(): void {
-            const current = Wallpapers.current;
-            CUtils.getAverageLuminance(current, l => {
-                if (Wallpapers.current == current)
-                    root.wallLuminance = l;
-            });
-        }
+        source: Qt.resolvedUrl(Wallpapers.current)
+        depth: 0
+        rescaleSize: 128
     }
 
     component Transparency: QtObject {

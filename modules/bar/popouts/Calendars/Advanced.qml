@@ -59,7 +59,7 @@ ColumnLayout {
         MaterialIcon {
             text: "calendar_month"
             color: Colours.palette.m3primary
-            font.pixelSize: Appearance.font.size.large * 2
+            font.pointSize: Appearance.font.size.large
         }
 
         ColumnLayout {
@@ -272,7 +272,7 @@ ColumnLayout {
                 MaterialIcon {
                     text: "today"
                     color: Colours.palette.m3onPrimaryContainer
-                    font.pixelSize: Appearance.font.size.normal
+                    font.pointSize: Appearance.font.size.normal
                 }
 
                 StyledText {

@@ -1,4 +1,3 @@
-// modules/bar/popouts/Content.qml
 pragma ComponentBehavior: Bound
 
 import qs.components
@@ -6,7 +5,6 @@ import qs.config
 import Quickshell
 import Quickshell.Services.SystemTray
 import QtQuick
-import "Calendars"
 
 Item {
     id: root
@@ -55,7 +53,11 @@ Item {
             }
         }
 
-        // Merge: calendar popouts and notifications, plus kblayout from main
+        Popout {
+            name: "kblayout"
+            source: "KbLayout.qml"
+        }
+
         Popout {
             name: "calendar-advanced"
             sourceComponent: Loader {
@@ -75,11 +77,6 @@ Item {
             sourceComponent: Notifications {
                 wrapper: root.wrapper
             }
-        }
-
-        Popout {
-            name: "kblayout"
-            source: "KbLayout.qml"
         }
 
         Repeater {
@@ -175,11 +172,5 @@ Item {
                 }
             }
         ]
-    }
-
-    component Anim: NumberAnimation {
-        duration: Appearance.anim.durations.normal
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Appearance.anim.curves.standard
     }
 }

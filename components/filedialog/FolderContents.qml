@@ -6,12 +6,13 @@ import "../images"
 import qs.services
 import qs.config
 import qs.utils
-import Caelestia
 import Quickshell
+import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import QtQuick.Controls
+import Qt.labs.folderlistmodel
 
 Item {
     id: root
@@ -85,30 +86,37 @@ Item {
 
         Keys.onReturnPressed: {
             if (root.dialog.selectionValid)
-                root.dialog.accepted(currentItem.modelData.path);
+                root.dialog.accepted(currentItem.filePath);
         }
         Keys.onEnterPressed: {
             if (root.dialog.selectionValid)
-                root.dialog.accepted(currentItem.modelData.path);
+                root.dialog.accepted(currentItem.filePath);
         }
 
         ScrollBar.vertical: StyledScrollBar {}
 
-        model: FileSystemModel {
-            path: {
+        model: FolderListModel {
+            showDirsFirst: true
+            folder: {
+                let url = "file://";
                 if (root.dialog.cwd[0] === "Home")
-                    return `${Paths.strip(Paths.home)}/${root.dialog.cwd.slice(1).join("/")}`;
+                    url += `${Paths.strip(Paths.home)}/${root.dialog.cwd.slice(1).join("/")}`;
                 else
-                    return root.dialog.cwd.join("/");
+                    url += root.dialog.cwd.join("/");
+                return url;
             }
-            onPathChanged: view.currentIndex = -1
+            onFolderChanged: view.currentIndex = -1
         }
 
         delegate: StyledRect {
             id: item
 
             required property int index
-            required property FileSystemEntry modelData
+            required property string fileName
+            required property string filePath
+            required property url fileUrl
+            required property string fileSuffix
+            required property bool fileIsDir
 
             readonly property real nonAnimHeight: icon.implicitHeight + name.anchors.topMargin + name.implicitHeight + Appearance.padding.normal * 2
 
@@ -122,10 +130,10 @@ Item {
 
             StateLayer {
                 onDoubleClicked: {
-                    if (item.modelData.isDir)
-                        root.dialog.cwd.push(item.modelData.name);
+                    if (item.fileIsDir)
+                        root.dialog.cwd.push(item.fileName);
                     else if (root.dialog.selectionValid)
-                        root.dialog.accepted(item.modelData.path);
+                        root.dialog.accepted(item.filePath);
                 }
 
                 function onClicked(): void {
@@ -142,20 +150,30 @@ Item {
 
                 implicitSize: Sizes.itemWidth - Appearance.padding.normal * 2
                 source: {
-                    const file = item.modelData;
-                    if (!file)
+                    if (!item.fileIsDir)
                         return Quickshell.iconPath("application-x-zerosize");
 
-                    if (file.isImage)
-                        return Qt.resolvedUrl(file.path);
-
-                    if (!file.isDir)
-                        return Quickshell.iconPath(file.mimeType.replace("/", "-"), "application-x-zerosize");
-
-                    if (root.dialog.cwd.length === 1 && ["Desktop", "Documents", "Downloads", "Music", "Pictures", "Public", "Templates", "Videos"].includes(file.name))
-                        return Quickshell.iconPath(`folder-${file.name.toLowerCase()}`);
+                    const name = item.fileName;
+                    if (root.dialog.cwd.length === 1 && ["Desktop", "Documents", "Downloads", "Music", "Pictures", "Public", "Templates", "Videos"].includes(name))
+                        return Quickshell.iconPath(`folder-${name.toLowerCase()}`);
 
                     return Quickshell.iconPath("inode-directory");
+                }
+
+                onStatusChanged: {
+                    if (status === Image.Error)
+                        source = Quickshell.iconPath("error");
+                }
+
+                Process {
+                    running: !item.fileIsDir
+                    command: ["file", "--mime", "-b", item.filePath]
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            const mime = text.split(";")[0].replace("/", "-");
+                            icon.source = Images.validImageTypes.some(t => mime === `image-${t}`) ? item.fileUrl : Quickshell.iconPath(mime, "image-missing");
+                        }
+                    }
                 }
             }
 
@@ -169,7 +187,7 @@ Item {
                 anchors.margins: Appearance.padding.normal
 
                 horizontalAlignment: Text.AlignHCenter
-                text: item.modelData?.name ?? ""
+                text: item.fileName
                 elide: item.GridView.isCurrentItem ? Text.ElideNone : Text.ElideRight
                 wrapMode: item.GridView.isCurrentItem ? Text.WrapAtWordBoundaryOrAnywhere : Text.NoWrap
             }
