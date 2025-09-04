@@ -315,6 +315,10 @@ default, you must create it manually.
         ],
         "persistent": true,
         "showOnHover": true,
+        "clock": {
+            "showCalendar": true,
+            "style": "simple"
+        },
         "status": {
             "showAudio": false,
             "showBattery": true,
@@ -322,6 +326,7 @@ default, you must create it manually.
             "showKbLayout": false,
             "showNetwork": true,
             "showLockStatus": true
+            "showNotifications": true
         },
         "tray": {
             "background": false,

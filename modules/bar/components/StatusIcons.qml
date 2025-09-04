@@ -16,6 +16,39 @@ StyledRect {
     property color colour: Colours.palette.m3secondary
     readonly property alias items: iconColumn
 
+    // Combine hoverAreas property (from Merge2) and color/radius (from main)
+    readonly property list<var> hoverAreas: [
+        {
+            name: "notifications",
+            item: notificationsIcon,
+            enabled: Config.bar.status.showNotifications
+        },
+        {
+            name: "audio",
+            item: audioIcon,
+            enabled: Config.bar.status.showAudio
+        },
+        {
+            name: "network",
+            item: networkIcon,
+            enabled: Config.bar.status.showNetwork
+        },
+        {
+            name: "bluetooth",
+            item: bluetoothGroup,
+            enabled: Config.bar.status.showBluetooth
+        },
+        {
+            name: "battery",
+            item: batteryIcon,
+            enabled: Config.bar.status.showBattery
+        },
+        {
+            name: "kblayout",
+            item: kblayoutIcon,
+            enabled: Config.bar.status.showKbLayout
+        }
+    ]
     color: Colours.tPalette.m3surfaceContainer
     radius: Appearance.rounding.full
 
@@ -99,12 +132,34 @@ StyledRect {
                     Behavior on implicitHeight {
                         Anim {}
                     }
+                    
+        // Notifications icon
+        Loader {
+            id: notificationsIcon
+
+            asynchronous: true
+            active: Config.bar.status.showNotifications
+            visible: active
+
+            sourceComponent: MaterialIcon {
+                animate: true
+                text: {
+                    if (Notifs.dnd) return "notifications_off"
+                    if (Notifs.list.length > 0) return "notifications"
+                    return "notifications_none"
+                }
+                color: Notifs.dnd ? Colours.palette.m3error : root.colour
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Notifs.toggleDnd()
                 }
             }
         }
 
         // Audio icon
         WrappedLoader {
+            id: audioIcon
             name: "audio"
             active: Config.bar.status.showAudio
 
@@ -117,6 +172,7 @@ StyledRect {
 
         // Keyboard layout icon
         WrappedLoader {
+            id: kblayoutIcon
             name: "kblayout"
             active: Config.bar.status.showKbLayout
 
@@ -130,6 +186,7 @@ StyledRect {
 
         // Network icon
         WrappedLoader {
+            id: networkIcon
             name: "network"
             active: Config.bar.status.showNetwork
 
@@ -144,6 +201,7 @@ StyledRect {
         WrappedLoader {
             Layout.preferredHeight: implicitHeight
 
+            id: bluetoothGroup
             name: "bluetooth"
             active: Config.bar.status.showBluetooth
 
@@ -208,6 +266,7 @@ StyledRect {
 
         // Battery icon
         WrappedLoader {
+            id: batteryIcon
             name: "battery"
             active: Config.bar.status.showBattery
 
@@ -243,5 +302,11 @@ StyledRect {
         Layout.alignment: Qt.AlignHCenter
         asynchronous: true
         visible: active
+    }
+
+    component Anim: NumberAnimation {
+        duration: Appearance.anim.durations.large
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: Appearance.anim.curves.emphasized
     }
 }
