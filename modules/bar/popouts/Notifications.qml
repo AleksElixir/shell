@@ -24,14 +24,14 @@ ColumnLayout {
     readonly property int maxListHeight: Math.min(480, (QsWindow.window?.screen?.height ?? 800) * 0.6)
 
     readonly property int notifCount: {
-        return (Notifs.list && Notifs.list.length !== undefined)
-        ? Notifs.list.length
-        : ((Notifs.list && Notifs.list.count !== undefined) ? Notifs.list.count : 0)
+        return (Notifs.list && Notifs.list.length !== undefined) ? Notifs.list.length : ((Notifs.list && Notifs.list.count !== undefined) ? Notifs.list.count : 0);
     }
     function notifAt(i) {
-        if (!Notifs.list) return undefined
-        if (typeof Notifs.list.get === 'function') return Notifs.list.get(i)
-        return Notifs.list[i]
+        if (!Notifs.list)
+            return undefined;
+        if (typeof Notifs.list.get === 'function')
+            return Notifs.list.get(i);
+        return Notifs.list[i];
     }
 
     function scrollToTop(): void {
@@ -49,9 +49,11 @@ ColumnLayout {
 
         MaterialIcon {
             text: {
-                if (Notifs.dnd) return "notifications_off"
-                if (notifCount > 0) return "notifications"
-                return "notifications_none"
+                if (Notifs.dnd)
+                    return "notifications_off";
+                if (notifCount > 0)
+                    return "notifications";
+                return "notifications_none";
             }
             color: Notifs.dnd ? Colours.palette.m3error : Colours.palette.m3primary
         }
@@ -103,7 +105,7 @@ ColumnLayout {
                 Layout.alignment: Qt.AlignHCenter
                 text: "notifications_none"
                 color: Colours.palette.m3onSurfaceVariant
-                font.pixelSize: 120
+                font.pointSize: 120
                 opacity: 0.6
             }
 
@@ -143,10 +145,10 @@ ColumnLayout {
                 required property int index
                 required property var modelData
                 readonly property alias nonAnimHeight: notif.nonAnimHeight
-            
+
                 width: ListView.view ? ListView.view.width : 0
                 height: notif.implicitHeight
-            
+
                 NotificationComponents.Notification {
                     id: notif
                     width: parent.width
@@ -212,9 +214,9 @@ ColumnLayout {
 
             function onClicked(): void {
                 for (let i = root.notifCount - 1; i >= 0; i--) {
-                    const n = root.notifAt(i)
+                    const n = root.notifAt(i);
                     if (n && n.notification && typeof n.notification.dismiss === 'function') {
-                        n.notification.dismiss()
+                        n.notification.dismiss();
                     }
                 }
             }
@@ -222,7 +224,7 @@ ColumnLayout {
 
         RowLayout {
             id: clearBtn
-            
+
             anchors.centerIn: parent
             spacing: Appearance.spacing.small
             opacity: notifCount === 0 ? 0.4 : 1.0

@@ -53,12 +53,6 @@ JsonObject {
         }
     ]
 
-    component Clock: JsonObject {
-        property bool showCalendar: true
-        property string style: "modern"  // Options: "modern", "simple"
-        property bool showIcon: true
-    }
-
     component Workspaces: JsonObject {
         property int shown: 5
         property bool activeIndicator: true
@@ -79,12 +73,19 @@ JsonObject {
     }
 
     component Status: JsonObject {
-        property bool showNotifications: true
         property bool showAudio: false
         property bool showKbLayout: false
         property bool showNetwork: true
         property bool showBluetooth: true
         property bool showBattery: true
+        property bool showLockStatus: true
+        property bool showNotifications: true
+    }
+
+    component Clock: JsonObject {
+        property bool showIcon: true
+        property bool showCalendar: true
+        property string calendarStyle: "advanced"
     }
 
     component Sizes: JsonObject {

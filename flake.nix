@@ -31,7 +31,6 @@
     packages = forAllSystems (pkgs: rec {
       caelestia-shell = pkgs.callPackage ./nix {
         rev = self.rev or self.dirtyRev;
-        stdenv = pkgs.clangStdenv;
         quickshell = inputs.quickshell.packages.${pkgs.system}.default.override {
           withX11 = false;
           withI3 = false;
@@ -40,7 +39,6 @@
         caelestia-cli = inputs.caelestia-cli.packages.${pkgs.system}.default;
       };
       with-cli = caelestia-shell.override {withCli = true;};
-      debug = caelestia-shell.override {debug = true;};
       default = caelestia-shell;
     });
 
