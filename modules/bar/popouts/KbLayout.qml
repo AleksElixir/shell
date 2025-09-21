@@ -11,63 +11,54 @@ import Quickshell
 
 Item {
     id: root
-    property var wrapper  // not required for standalone popout
+
+    // Layouts with indexes
+    // Order matters: must match hyprctl devices -j
+    property var layouts: [
+        { name: "us", index: 0 },
+        { name: "ee", index: 1 },
+        { name: "ru", index: 2 }
+    ]
 
     implicitWidth: layout.implicitWidth + Appearance.padding.normal * 2
     implicitHeight: layout.implicitHeight + Appearance.padding.normal * 2
 
+    ButtonGroup { id: layoutsGroup }
+
     ColumnLayout {
         id: layout
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Appearance.spacing.normal
 
-        // Display current keyboard layout
         StyledText {
-            id: kbLayoutText
-            text: qsTr("Keyboard layout: %1").arg(Hypr.kbLayoutFull)
+            text: qsTr("Keyboard Layout")
             font.weight: 500
         }
 
-        // Timer to refresh layout after switching
-        Timer {
-            id: refreshTimer
-            interval: 300
-            repeat: false
-            onTriggered: {
-                kbLayoutText.text = qsTr("Keyboard layout: %1").arg(Hypr.kbLayoutFull)
+        Repeater {
+            model: root.layouts
+
+            StyledRadioButton {
+                required property var modelData
+
+                ButtonGroup.group: layoutsGroup
+                checked: Hypr.kbLayout === modelData.name
+                text: modelData.name
+
+                onClicked: {
+                    Quickshell.execDetached([
+                        "sh", "-c",
+                        `hyprctl switchxkblayout all ${modelData.index}`
+                    ])
+                }
             }
         }
 
-            // Switch Layout button
-            StyledRect {
-            Layout.topMargin: Appearance.spacing.small
-            Layout.fillWidth: true
-
-            implicitWidth: switchBtn.implicitWidth + Appearance.padding.normal * 2
-            implicitHeight: switchBtn.implicitHeight + Appearance.padding.small
-
-            radius: Appearance.rounding.normal
-            color: Colours.palette.m3primaryContainer
-
-            StateLayer {
-                color: Colours.palette.m3onPrimaryContainer
-
-                function onClicked() {
-                    Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", "next"]);
-                    refreshTimer.start();
-                }
-            }
-
-            RowLayout {
-                id: switchBtn
-                anchors.centerIn: parent
-
-                StyledText {
-                    text: qsTr("Switch Layout")
-                    color: Colours.palette.m3onPrimaryContainer
-                    font.weight: 500
-                    anchors.centerIn: parent
-                }
-            }
+        StyledText {
+            Layout.topMargin: Appearance.spacing.smaller
+            text: qsTr("Current: %1").arg(Hypr.kbLayoutFull)
+            font.weight: 500
         }
     }
 }
