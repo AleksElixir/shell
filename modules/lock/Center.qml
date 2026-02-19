@@ -31,8 +31,6 @@ ColumnLayout {
 
         StyledText {
             Layout.alignment: Qt.AlignVCenter
-            text: Time.hourStr
-            color: Colours.palette.m3secondary
             text: root.timeComponents[0] ?? ""
             color: Colours?.palette?.m3secondary ?? "white"
             font.pointSize: Math.floor(Appearance.font.size.extraLarge * 3 * root.centerScale)
@@ -51,8 +49,6 @@ ColumnLayout {
 
         StyledText {
             Layout.alignment: Qt.AlignVCenter
-            text: Time.minuteStr
-            color: Colours.palette.m3secondary
             text: root.timeComponents[1] ?? ""
             color: Colours?.palette?.m3secondary ?? "white"
             font.pointSize: Math.floor(Appearance.font.size.extraLarge * 3 * root.centerScale)
@@ -68,8 +64,6 @@ ColumnLayout {
             visible: active
 
             sourceComponent: StyledText {
-                text: Time.amPmStr
-                color: Colours.palette.m3primary
                 text: root.timeComponents[2] ?? ""
                 color: Colours?.palette?.m3primary ?? "white"
                 font.pointSize: Math.floor(Appearance.font.size.extraLarge * 2 * root.centerScale)
