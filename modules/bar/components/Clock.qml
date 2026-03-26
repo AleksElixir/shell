@@ -1,71 +1,38 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
 import qs.components
 import qs.services
 import qs.config
+import QtQuick
 
-StyledRect {
+Column {
     id: root
 
-    readonly property color colour: Colours.palette.m3tertiary
-    readonly property int padding: Config.bar.clock.background ? Appearance.padding.normal : Appearance.padding.small
+    property color colour: Colours.palette.m3tertiary
 
-    implicitWidth: Config.bar.sizes.innerWidth
-    implicitHeight: layout.implicitHeight + root.padding * 2
+    spacing: Appearance.spacing.small
 
-    color: Qt.alpha(Colours.tPalette.m3surfaceContainer, Config.bar.clock.background ? Colours.tPalette.m3surfaceContainer.a : 0)
-    radius: Appearance.rounding.full
+    Loader {
+        anchors.horizontalCenter: parent.horizontalCenter
 
-    Column {
-        id: layout
+        active: Config.bar.clock.showIcon
+        visible: active
 
-        anchors.centerIn: parent
-        spacing: Appearance.spacing.small
-
-        Loader {
-            asynchronous: true
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            active: Config.bar.clock.showIcon
-            visible: active
-
-            sourceComponent: MaterialIcon {
-                text: "calendar_month"
-                color: root.colour
-            }
-        }
-
-        StyledText {
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            visible: Config.bar.clock.showDate
-
-            horizontalAlignment: StyledText.AlignHCenter
-            text: Time.format("ddd\nd")
-            font.pointSize: Appearance.font.size.smaller
-            font.family: Appearance.font.family.sans
+        sourceComponent: MaterialIcon {
+            text: "calendar_month"
             color: root.colour
         }
+    }
 
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: Config.bar.clock.showDate
-            height: visible ? 1 : 0
+    StyledText {
+        id: text
 
-            width: parent.width * 0.8
-            color: root.colour
-            opacity: 0.2
-        }
+        anchors.horizontalCenter: parent.horizontalCenter
 
-        StyledText {
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            horizontalAlignment: StyledText.AlignHCenter
-            text: Time.format(Config.services.useTwelveHourClock ? "hh\nmm\nA" : "hh\nmm")
-            font.pointSize: Appearance.font.size.smaller
-            font.family: Appearance.font.family.mono
-            color: root.colour
-        }
+        horizontalAlignment: StyledText.AlignHCenter
+        text: Time.format(Config.services.useTwelveHourClock ? "hh\nmm\nA" : "hh\nmm")
+        font.pointSize: Appearance.font.size.smaller
+        font.family: Appearance.font.family.mono
+        color: root.colour
     }
 }

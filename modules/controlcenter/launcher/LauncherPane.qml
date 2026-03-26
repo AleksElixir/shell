@@ -2,20 +2,19 @@ pragma ComponentBehavior: Bound
 
 import ".."
 import "../components"
-import "../../launcher/services"
-import "../../../utils/scripts/fuzzysort.js" as Fuzzy
-import QtQuick
-import QtQuick.Layouts
-import Quickshell
-import Quickshell.Widgets
-import Caelestia
 import qs.components
-import qs.components.containers
 import qs.components.controls
 import qs.components.effects
+import qs.components.containers
 import qs.services
 import qs.config
 import qs.utils
+import Caelestia
+import Quickshell
+import Quickshell.Widgets
+import QtQuick
+import QtQuick.Layouts
+import "../../../utils/scripts/fuzzysort.js" as Fuzzy
 
 Item {
     id: root
@@ -25,8 +24,21 @@ Item {
     property var selectedApp: root.session.launcher.active
     property bool hideFromLauncherChecked: false
     property bool favouriteChecked: false
-    property string searchText: ""
-    property list<var> filteredApps: []
+
+    anchors.fill: parent
+
+    onSelectedAppChanged: {
+        root.session.launcher.active = root.selectedApp;
+        updateToggleState();
+    }
+
+    Connections {
+        target: root.session.launcher
+        function onActiveChanged() {
+            root.selectedApp = root.session.launcher.active;
+            updateToggleState();
+        }
+    }
 
     function updateToggleState() {
         if (!root.selectedApp) {
@@ -65,22 +77,147 @@ Item {
         Config.save();
     }
 
-    function filterApps(search: string): list<var> {
-        if (!search || search.trim() === "") {
-            const apps = [];
-            for (let i = 0; i < allAppsDb.apps.length; i++) {
-                apps.push(allAppsDb.apps[i]);
+    AppDb {
+        id: allAppsDb
+
+        path: `${Paths.state}/apps.sqlite`
+        favouriteApps: Config.launcher.favouriteApps
+        entries: DesktopEntries.applications.values
+    }
+
+    property string searchText: ""
+
+    // Helper function to get categories for an app (returns array)
+    function getAppCategories(appId: string): list<string> {
+        const cats = [];
+        if (!Config.launcher.categories)
+            return cats;
+
+        for (let i = 0; i < Config.launcher.categories.length; i++) {
+            const category = Config.launcher.categories[i];
+            if (!category || !category.apps)
+                continue;
+
+            // Check if this app is in this category's apps list
+            if (typeof category.apps === 'object' && category.apps.length !== undefined) {
+                for (let j = 0; j < category.apps.length; j++) {
+                    if (category.apps[j] === appId) {
+                        cats.push(category.name);
+                        break;
+                    }
+                }
             }
-            return apps;
+        }
+        return cats;
+    }
+
+    // Helper function to check if app has a specific category
+    function appHasCategory(appId: string, categoryName: string): bool {
+        if (!Config.launcher.categories)
+            return false;
+
+        for (let i = 0; i < Config.launcher.categories.length; i++) {
+            const category = Config.launcher.categories[i];
+            if (!category || category.name.toLowerCase() !== categoryName.toLowerCase())
+                continue;
+            if (!category.apps)
+                continue;
+
+            if (typeof category.apps === 'object' && category.apps.length !== undefined) {
+                for (let j = 0; j < category.apps.length; j++) {
+                    if (category.apps[j] === appId) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // Helper function to toggle category for an app
+    function toggleAppCategory(appId: string, categoryName: string): void {
+        if (!Config.launcher.categories)
+            return;
+
+        const newCategories = [];
+
+        for (let i = 0; i < Config.launcher.categories.length; i++) {
+            const category = Config.launcher.categories[i];
+            if (!category)
+                continue;
+
+            const newCategory = {
+                name: category.name,
+                icon: category.icon,
+                apps: []
+            };
+
+            // Copy existing apps
+            if (category.apps && typeof category.apps === 'object' && category.apps.length !== undefined) {
+                for (let j = 0; j < category.apps.length; j++) {
+                    newCategory.apps.push(category.apps[j]);
+                }
+            }
+
+            // Toggle this app in this category
+            if (category.name.toLowerCase() === categoryName.toLowerCase()) {
+                const index = newCategory.apps.indexOf(appId);
+                if (index >= 0) {
+                    newCategory.apps.splice(index, 1);
+                } else {
+                    newCategory.apps.push(appId);
+                }
+            }
+
+            newCategories.push(newCategory);
         }
 
-        if (!allAppsDb.apps || allAppsDb.apps.length === 0) {
+        Config.launcher.categories = newCategories;
+        Config.save();
+    }
+
+    function filterApps(search: string): list<var> {
+        let baseApps = [];
+
+        // Filter by category first
+        if (root.activeCategory === "all") {
+            for (let i = 0; i < allAppsDb.apps.length; i++) {
+                baseApps.push(allAppsDb.apps[i]);
+            }
+        } else if (root.activeCategory === "favourites") {
+            for (let i = 0; i < allAppsDb.apps.length; i++) {
+                const app = allAppsDb.apps[i];
+                const appId = app.id || app.entry?.id;
+                if (Config.launcher.favouriteApps && Config.launcher.favouriteApps.includes(appId)) {
+                    baseApps.push(app);
+                }
+            }
+        } else {
+            // Custom category
+            console.log(`Filtering for category: ${root.activeCategory}`);
+            for (let i = 0; i < allAppsDb.apps.length; i++) {
+                const app = allAppsDb.apps[i];
+                const appId = app.id || app.entry?.id;
+                if (appHasCategory(appId, root.activeCategory)) {
+                    console.log(`Found app in category: ${appId}`);
+                    baseApps.push(app);
+                }
+            }
+            console.log(`Total apps in ${root.activeCategory}: ${baseApps.length}`);
+        }
+
+        // Then filter by search text
+        if (!search || search.trim() === "") {
+            return baseApps;
+        }
+
+        if (baseApps.length === 0) {
             return [];
         }
 
         const preparedApps = [];
-        for (let i = 0; i < allAppsDb.apps.length; i++) {
-            const app = allAppsDb.apps[i];
+        for (let i = 0; i < baseApps.length; i++) {
+            const app = baseApps[i];
             const name = app.name || app.entry?.name || "";
             preparedApps.push({
                 _item: app,
@@ -97,18 +234,19 @@ Item {
         return results.sort((a, b) => b._score - a._score).map(r => r.obj._item);
     }
 
+    property list<var> filteredApps: []
+
     function updateFilteredApps() {
         filteredApps = filterApps(searchText);
     }
 
-    anchors.fill: parent
-
-    onSelectedAppChanged: {
-        root.session.launcher.active = root.selectedApp;
-        updateToggleState();
+    onSearchTextChanged: {
+        updateFilteredApps();
     }
 
-    onSearchTextChanged: {
+    property string activeCategory: "all"
+
+    onActiveCategoryChanged: {
         updateFilteredApps();
     }
 
@@ -117,37 +255,19 @@ Item {
     }
 
     Connections {
-        function onActiveChanged() {
-            root.selectedApp = root.session.launcher.active;
-            updateToggleState();
-        }
-
-        target: root.session.launcher
-    }
-
-    AppDb {
-        id: allAppsDb
-
-        path: `${Paths.state}/apps.sqlite`
-        favouriteApps: Config.launcher.favouriteApps
-        entries: DesktopEntries.applications.values
-    }
-
-    Connections {
+        target: allAppsDb
         function onAppsChanged() {
             updateFilteredApps();
         }
-
-        target: allAppsDb
     }
 
     SplitPaneLayout {
         anchors.fill: parent
 
         leftContent: Component {
+
             ColumnLayout {
                 id: leftLauncherLayout
-
                 anchors.fill: parent
 
                 spacing: Appearance.spacing.small
@@ -180,6 +300,86 @@ Item {
                             } else {
                                 if (root.filteredApps.length > 0) {
                                     root.session.launcher.active = root.filteredApps[0];
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Category tabs
+                StyledFlickable {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: categoryRow.height
+                    Layout.topMargin: Appearance.spacing.normal
+                    flickableDirection: Flickable.HorizontalFlick
+                    contentWidth: categoryRow.width
+                    clip: true
+
+                    Row {
+                        id: categoryRow
+                        spacing: Appearance.spacing.small
+
+                        Repeater {
+                            model: [
+                                {
+                                    id: "all",
+                                    name: qsTr("All"),
+                                    icon: "apps"
+                                },
+                                {
+                                    id: "favourites",
+                                    name: qsTr("Favourites"),
+                                    icon: "favorite"
+                                }
+                            ].concat(Config.launcher.categories.map(cat => ({
+                                        id: cat.name.toLowerCase(),
+                                        name: cat.name,
+                                        icon: cat.icon
+                                    })))
+
+                            delegate: StyledRect {
+                                required property var modelData
+
+                                property bool isActive: root.activeCategory === modelData.id
+
+                                implicitWidth: tabContent.width + Appearance.padding.normal * 2
+                                implicitHeight: tabContent.height + Appearance.padding.smaller * 2
+
+                                color: isActive ? Colours.palette.m3secondaryContainer : Colours.tPalette.m3surfaceContainerHigh
+                                radius: Appearance.rounding.full
+
+                                StateLayer {
+                                    radius: parent.radius
+                                    function onClicked(): void {
+                                        root.activeCategory = modelData.id;
+                                    }
+                                }
+
+                                Row {
+                                    id: tabContent
+                                    anchors.centerIn: parent
+                                    spacing: Appearance.spacing.smaller
+
+                                    MaterialIcon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.icon
+                                        font.pointSize: Appearance.font.size.small
+                                        color: isActive ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                                    }
+
+                                    StyledText {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.name
+                                        font.pointSize: Appearance.font.size.small
+                                        font.weight: isActive ? 500 : 400
+                                        color: isActive ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                                    }
+                                }
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: Appearance.anim.durations.small
+                                    }
                                 }
                             }
                         }
@@ -284,7 +484,6 @@ Item {
 
                 Loader {
                     id: appsListLoader
-
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     asynchronous: true
@@ -307,25 +506,25 @@ Item {
                         delegate: StyledRect {
                             required property var modelData
 
-                            readonly property bool isSelected: root.selectedApp === modelData
-
                             width: parent ? parent.width : 0
                             implicitHeight: 40
+
+                            readonly property bool isSelected: root.selectedApp === modelData
 
                             color: isSelected ? Colours.layer(Colours.palette.m3surfaceContainer, 2) : "transparent"
                             radius: Appearance.rounding.normal
 
                             opacity: 0
 
-                            Component.onCompleted: {
-                                opacity = 1;
-                            }
-
                             Behavior on opacity {
                                 NumberAnimation {
                                     duration: 1000
                                     easing.type: Easing.OutCubic
                                 }
+                            }
+
+                            Component.onCompleted: {
+                                opacity = 1;
                             }
 
                             StateLayer {
@@ -343,7 +542,6 @@ Item {
                                 spacing: Appearance.spacing.normal
 
                                 IconImage {
-                                    asynchronous: true
                                     Layout.alignment: Qt.AlignVCenter
                                     implicitSize: 32
                                     source: {
@@ -359,11 +557,9 @@ Item {
                                 }
 
                                 Loader {
+                                    Layout.alignment: Qt.AlignVCenter
                                     readonly property bool isHidden: modelData ? Strings.testRegexList(Config.launcher.hiddenApps, modelData.id) : false
                                     readonly property bool isFav: modelData ? Strings.testRegexList(Config.launcher.favouriteApps, modelData.id) : false
-
-                                    Layout.alignment: Qt.AlignVCenter
-                                    asynchronous: true
                                     active: isHidden || isFav
 
                                     sourceComponent: isHidden ? hiddenIcon : (isFav ? favouriteIcon : null)
@@ -371,7 +567,6 @@ Item {
 
                                 Component {
                                     id: hiddenIcon
-
                                     MaterialIcon {
                                         text: "visibility_off"
                                         fill: 1
@@ -381,7 +576,6 @@ Item {
 
                                 Component {
                                     id: favouriteIcon
-
                                     MaterialIcon {
                                         text: "favorite"
                                         fill: 1
@@ -415,30 +609,11 @@ Item {
                     nextComponent = targetComponent;
                 }
 
-                onPaneChanged: {
-                    nextComponent = getComponentForPane();
-                    paneId = pane ? (pane.id || pane.entry?.id || "") : "";
-                }
-
-                onDisplayedAppChanged: {
-                    if (displayedApp) {
-                        const appId = displayedApp.id || displayedApp.entry?.id;
-                        root.hideFromLauncherChecked = Config.launcher.hiddenApps && Config.launcher.hiddenApps.length > 0 && Strings.testRegexList(Config.launcher.hiddenApps, appId);
-                        root.favouriteChecked = Config.launcher.favouriteApps && Config.launcher.favouriteApps.length > 0 && Strings.testRegexList(Config.launcher.favouriteApps, appId);
-                    } else {
-                        root.hideFromLauncherChecked = false;
-                        root.favouriteChecked = false;
-                    }
-                }
-
                 Loader {
                     id: rightLauncherLoader
 
-                    property var displayedApp: rightLauncherPane.displayedApp
-
                     anchors.fill: parent
 
-                    asynchronous: true
                     opacity: 1
                     scale: 1
                     transformOrigin: Item.Center
@@ -446,6 +621,8 @@ Item {
 
                     sourceComponent: rightLauncherPane.targetComponent
                     active: true
+
+                    property var displayedApp: rightLauncherPane.displayedApp
 
                     onItemChanged: {
                         if (item && rightLauncherPane.pane && rightLauncherPane.displayedApp !== rightLauncherPane.pane) {
@@ -481,6 +658,22 @@ Item {
                         ]
                     }
                 }
+
+                onPaneChanged: {
+                    nextComponent = getComponentForPane();
+                    paneId = pane ? (pane.id || pane.entry?.id || "") : "";
+                }
+
+                onDisplayedAppChanged: {
+                    if (displayedApp) {
+                        const appId = displayedApp.id || displayedApp.entry?.id;
+                        root.hideFromLauncherChecked = Config.launcher.hiddenApps && Config.launcher.hiddenApps.length > 0 && Strings.testRegexList(Config.launcher.hiddenApps, appId);
+                        root.favouriteChecked = Config.launcher.favouriteApps && Config.launcher.favouriteApps.length > 0 && Strings.testRegexList(Config.launcher.favouriteApps, appId);
+                    } else {
+                        root.hideFromLauncherChecked = false;
+                        root.favouriteChecked = false;
+                    }
+                }
             }
         }
     }
@@ -490,7 +683,6 @@ Item {
 
         StyledFlickable {
             id: settingsFlickable
-
             flickableDirection: Flickable.VerticalFlick
             contentHeight: settingsInner.height
 
@@ -514,10 +706,10 @@ Item {
 
         ColumnLayout {
             id: appDetailsLayout
+            anchors.fill: parent
 
             readonly property var displayedApp: parent && parent.displayedApp !== undefined ? parent.displayedApp : null
 
-            anchors.fill: parent
             spacing: Appearance.spacing.normal
 
             SettingsHeader {
@@ -544,8 +736,6 @@ Item {
 
                     IconImage {
                         id: appIconImage
-
-                        asynchronous: true
                         Layout.alignment: Qt.AlignHCenter
                         implicitSize: Appearance.font.size.extraLarge * 3 * 2
                         source: {
@@ -562,7 +752,6 @@ Item {
 
                     StyledText {
                         id: appTitleText
-
                         Layout.alignment: Qt.AlignHCenter
                         text: displayedApp ? (displayedApp.name || displayedApp.entry?.name || qsTr("Application Details")) : ""
                         font.pointSize: Appearance.font.size.large
@@ -580,7 +769,6 @@ Item {
 
                 StyledFlickable {
                     id: detailsFlickable
-
                     anchors.fill: parent
                     flickableDirection: Flickable.VerticalFlick
                     contentHeight: debugLayout.height
@@ -591,7 +779,6 @@ Item {
 
                     ColumnLayout {
                         id: debugLayout
-
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
@@ -660,6 +847,120 @@ Item {
                                     }
                                     Config.launcher.hiddenApps = hiddenApps;
                                     Config.save();
+                                }
+                            }
+                        }
+
+                        SectionHeader {
+                            Layout.topMargin: Appearance.spacing.large
+                            visible: appDetailsLayout.displayedApp !== null
+                            title: qsTr("Category")
+                            description: qsTr("Assign this app to a category")
+                        }
+
+                        SectionContainer {
+                            visible: appDetailsLayout.displayedApp !== null
+
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: 2
+                                columnSpacing: Appearance.spacing.small
+                                rowSpacing: Appearance.spacing.small
+
+                                Repeater {
+                                    model: Config.launcher.categories
+
+                                    delegate: StyledRect {
+                                        required property var modelData
+                                        required property int index
+
+                                        Layout.fillWidth: true
+                                        implicitHeight: categoryContent.height + Appearance.padding.normal * 2
+
+                                        property string categoryName: modelData.name
+                                        property bool isAssigned: {
+                                            const app = appDetailsLayout.displayedApp;
+                                            if (!app)
+                                                return false;
+                                            const appId = app.id || app.entry?.id;
+                                            return root.appHasCategory(appId, categoryName);
+                                        }
+
+                                        color: isAssigned ? Colours.palette.m3secondaryContainer : Colours.tPalette.m3surfaceContainerHigh
+                                        radius: Appearance.rounding.normal
+
+                                        StateLayer {
+                                            radius: parent.radius
+                                            function onClicked(): void {
+                                                const app = appDetailsLayout.displayedApp;
+                                                if (!app)
+                                                    return;
+                                                const appId = app.id || app.entry?.id;
+                                                console.log(`Toggling category ${categoryName} for app ${appId}`);
+                                                root.toggleAppCategory(appId, categoryName);
+                                            }
+                                        }
+
+                                        Row {
+                                            id: categoryContent
+                                            anchors.centerIn: parent
+                                            spacing: Appearance.spacing.normal
+
+                                            MaterialIcon {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: modelData.icon
+                                                color: isAssigned ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                                            }
+
+                                            StyledText {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: modelData.name
+                                                font.weight: isAssigned ? 500 : 400
+                                                color: isAssigned ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                                            }
+
+                                            MaterialIcon {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: "check"
+                                                visible: isAssigned
+                                                color: Colours.palette.m3onSecondaryContainer
+                                            }
+                                        }
+                                    }
+                                }
+
+                                TextButton {
+                                    Layout.columnSpan: 2
+                                    Layout.fillWidth: true
+                                    Layout.topMargin: Appearance.spacing.small
+                                    text: qsTr("Clear Category")
+                                    inactiveColour: Colours.palette.m3errorContainer
+                                    inactiveOnColour: Colours.palette.m3onErrorContainer
+                                    visible: {
+                                        const app = appDetailsLayout.displayedApp;
+                                        if (!app)
+                                            return false;
+                                        const appId = app.id || app.entry?.id;
+                                        return root.getAppCategories(appId).length > 0;
+                                    }
+
+                                    onClicked: {
+                                        const app = appDetailsLayout.displayedApp;
+                                        if (!app)
+                                            return;
+                                        const appId = app.id || app.entry?.id;
+
+                                        // Remove all categories for this app
+                                        const newCategories = [];
+                                        for (let i = 0; i < Config.launcher.appCategories.length; i++) {
+                                            const item = Config.launcher.appCategories[i];
+                                            if (!item || item.appId !== appId) {
+                                                newCategories.push(item);
+                                            }
+                                        }
+                                        Config.launcher.appCategories = newCategories;
+                                        Config.save();
+                                    }
                                 }
                             }
                         }

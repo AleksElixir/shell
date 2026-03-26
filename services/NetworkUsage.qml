@@ -1,10 +1,13 @@
 pragma Singleton
 
-import QtQuick
+import qs.config
+
 import Quickshell
 import Quickshell.Io
+
 import Caelestia.Internal
-import qs.config
+
+import QtQuick
 
 Singleton {
     id: root
@@ -138,19 +141,16 @@ Singleton {
 
     CircularBuffer {
         id: _downloadBuffer
-
         capacity: root.historyLength + 1
     }
 
     CircularBuffer {
         id: _uploadBuffer
-
         capacity: root.historyLength + 1
     }
 
     FileView {
         id: netDevFile
-
         path: "/proc/net/dev"
     }
 

@@ -1,18 +1,20 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import Quickshell.Services.Pipewire
 import qs.components
 import qs.components.controls
 import qs.services
 import qs.config
+import Quickshell
+import Quickshell.Services.Pipewire
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import "../../controlcenter/network"
 
 Item {
     id: root
 
-    required property PopoutState popouts
+    required property var wrapper
 
     implicitWidth: layout.implicitWidth + Appearance.padding.normal * 2
     implicitHeight: layout.implicitHeight + Appearance.padding.normal * 2
@@ -112,7 +114,7 @@ Item {
             text: qsTr("Open settings")
             icon: "settings"
 
-            onClicked: root.popouts.detachRequested("audio")
+            onClicked: root.wrapper.detach("audio")
         }
     }
 }

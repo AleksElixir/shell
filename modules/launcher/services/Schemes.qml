@@ -1,11 +1,11 @@
 pragma Singleton
 
 import ".."
-import QtQuick
-import Quickshell
-import Quickshell.Io
 import qs.config
 import qs.utils
+import Quickshell
+import Quickshell.Io
+import QtQuick
 
 Searcher {
     id: root
@@ -55,7 +55,7 @@ Searcher {
                     for (const f of s)
                         flat.push(f);
 
-                schemes.model = flat.sort((a, b) => String(a.name + a.flavour).localeCompare((b.name + b.flavour)));
+                schemes.model = flat.sort((a, b) => (a.name + a.flavour).localeCompare((b.name + b.flavour)));
             }
         }
     }

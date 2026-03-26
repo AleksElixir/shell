@@ -75,20 +75,13 @@ void CUtils::saveItem(QQuickItem* target, const QUrl& path, const QRect& rect, Q
             QObject::connect(watcher, &QFutureWatcher<bool>::finished, this, [=]() {
                 if (watcher->result()) {
                     if (onSaved.isCallable()) {
-                        QJSValueList args = { QJSValue(path.toLocalFile()) };
-                        if (engine) {
-                            args << engine->toScriptValue(QVariant::fromValue(path));
-                        }
-                        onSaved.call(args);
+                        onSaved.call(
+                            { QJSValue(path.toLocalFile()), engine->toScriptValue(QVariant::fromValue(path)) });
                     }
                 } else {
                     qWarning() << "CUtils::saveItem: failed to save" << path;
                     if (onFailed.isCallable()) {
-                        if (engine) {
-                            onFailed.call({ engine->toScriptValue(QVariant::fromValue(path)) });
-                        } else {
-                            onFailed.call();
-                        }
+                        onFailed.call({ engine->toScriptValue(QVariant::fromValue(path)) });
                     }
                 }
                 watcher->deleteLater();

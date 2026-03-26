@@ -2,16 +2,16 @@ pragma ComponentBehavior: Bound
 
 import ".."
 import "../components"
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import Quickshell
 import qs.components
-import qs.components.containers
 import qs.components.controls
+import qs.components.containers
 import qs.components.effects
 import qs.services
 import qs.config
+import Quickshell
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 
 ColumnLayout {
     id: root
@@ -82,7 +82,6 @@ ColumnLayout {
                     required property int index
 
                     width: ListView.view ? ListView.view.width : undefined
-                    implicitHeight: 60
                     color: Colours.tPalette.m3surfaceContainerHigh
                     radius: Appearance.rounding.normal
 
@@ -148,6 +147,8 @@ ColumnLayout {
                             }
                         }
                     }
+
+                    implicitHeight: 60
                 }
             }
         }

@@ -1,11 +1,9 @@
-pragma ComponentBehavior: Bound
-
-import QtQuick
-import QtQuick.Layouts
-import Quickshell.Widgets
 import qs.components
 import qs.services
 import qs.config
+import Quickshell.Widgets
+import QtQuick
+import QtQuick.Layouts
 
 ColumnLayout {
     id: root
@@ -37,11 +35,11 @@ ColumnLayout {
             implicitHeight: moveToWsIcon.implicitHeight + Appearance.padding.small
 
             StateLayer {
+                color: Colours.palette.m3onPrimary
+
                 function onClicked(): void {
                     root.moveToWsExpanded = !root.moveToWsExpanded;
                 }
-
-                color: Colours.palette.m3onPrimary
             }
 
             MaterialIcon {
@@ -83,14 +81,14 @@ ColumnLayout {
                     readonly property int wsId: Math.floor((Hypr.activeWsId - 1) / 10) * 10 + index + 1
                     readonly property bool isCurrent: root.client?.workspace.id === wsId
 
-                    function onClicked(): void {
-                        Hypr.dispatch(`movetoworkspace ${wsId},address:0x${root.client?.address}`);
-                    }
-
                     color: isCurrent ? Colours.tPalette.m3surfaceContainerHighest : Colours.palette.m3tertiaryContainer
                     onColor: isCurrent ? Colours.palette.m3onSurface : Colours.palette.m3onTertiaryContainer
                     text: wsId
                     disabled: isCurrent
+
+                    function onClicked(): void {
+                        Hypr.dispatch(`movetoworkspace ${wsId},address:0x${root.client?.address}`);
+                    }
                 }
             }
         }
@@ -109,41 +107,40 @@ ColumnLayout {
         spacing: root.client?.lastIpcObject.floating ? Appearance.spacing.normal : Appearance.spacing.small
 
         Button {
-            function onClicked(): void {
-                Hypr.dispatch(`togglefloating address:0x${root.client?.address}`);
-            }
-
             color: Colours.palette.m3secondaryContainer
             onColor: Colours.palette.m3onSecondaryContainer
             text: root.client?.lastIpcObject.floating ? qsTr("Tile") : qsTr("Float")
+
+            function onClicked(): void {
+                Hypr.dispatch(`togglefloating address:0x${root.client?.address}`);
+            }
         }
 
         Loader {
-            asynchronous: true
             active: root.client?.lastIpcObject.floating
             Layout.fillWidth: active
             Layout.leftMargin: active ? 0 : -parent.spacing
             Layout.rightMargin: active ? 0 : -parent.spacing
 
             sourceComponent: Button {
-                function onClicked(): void {
-                    Hypr.dispatch(`pin address:0x${root.client?.address}`);
-                }
-
                 color: Colours.palette.m3secondaryContainer
                 onColor: Colours.palette.m3onSecondaryContainer
                 text: root.client?.lastIpcObject.pinned ? qsTr("Unpin") : qsTr("Pin")
+
+                function onClicked(): void {
+                    Hypr.dispatch(`pin address:0x${root.client?.address}`);
+                }
             }
         }
 
         Button {
-            function onClicked(): void {
-                Hypr.dispatch(`killwindow address:0x${root.client?.address}`);
-            }
-
             color: Colours.palette.m3errorContainer
             onColor: Colours.palette.m3onErrorContainer
             text: qsTr("Kill")
+
+            function onClicked(): void {
+                Hypr.dispatch(`killwindow address:0x${root.client?.address}`);
+            }
         }
     }
 
@@ -163,11 +160,11 @@ ColumnLayout {
         StateLayer {
             id: stateLayer
 
+            color: parent.onColor
+
             function onClicked(): void {
                 parent.onClicked();
             }
-
-            color: parent.onColor
         }
 
         StyledText {

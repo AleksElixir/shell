@@ -4,24 +4,29 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.components
+import qs.components.controls
 import qs.services
 import qs.config
+import qs.utils
+
+import "."
 
 ColumnLayout {
     id: root
 
-    function refresh() {
-        kb.refresh();
-    }
+    required property Item wrapper
 
     spacing: Appearance.spacing.small
     width: Config.bar.sizes.kbLayoutWidth
 
-    Component.onCompleted: kb.start()
-
     KbLayoutModel {
         id: kb
     }
+
+    function refresh() {
+        kb.refresh();
+    }
+    Component.onCompleted: kb.start()
 
     StyledText {
         Layout.topMargin: Appearance.padding.normal
@@ -32,7 +37,6 @@ ColumnLayout {
 
     ListView {
         id: list
-
         model: kb.visibleModel
 
         Layout.fillWidth: true
@@ -81,45 +85,44 @@ ColumnLayout {
         }
 
         delegate: Item {
-            id: kbDelegate
-
             required property int layoutIndex
             required property string label
-            readonly property bool isDisabled: layoutIndex > 3
 
             width: list.width
             height: Math.max(36, rowText.implicitHeight + Appearance.padding.small * 2)
-            ToolTip.visible: isDisabled && layer.containsMouse
-            ToolTip.text: "XKB limitation: maximum 4 layouts allowed"
+
+            readonly property bool isDisabled: layoutIndex > 3
 
             StateLayer {
                 id: layer
-
-                function onClicked(): void {
-                    if (!kbDelegate.isDisabled)
-                        kb.switchTo(kbDelegate.layoutIndex);
-                }
-
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 implicitHeight: parent.height - 4
+
                 radius: Appearance.rounding.full
-                enabled: !kbDelegate.isDisabled
+                enabled: !isDisabled
+
+                function onClicked(): void {
+                    if (!isDisabled)
+                        kb.switchTo(layoutIndex);
+                }
             }
 
             StyledText {
                 id: rowText
-
                 anchors.verticalCenter: layer.verticalCenter
                 anchors.left: layer.left
                 anchors.right: layer.right
                 anchors.leftMargin: Appearance.padding.small
                 anchors.rightMargin: Appearance.padding.small
-                text: kbDelegate.label
+                text: label
                 elide: Text.ElideRight
-                opacity: kbDelegate.isDisabled ? 0.4 : 1.0
+                opacity: isDisabled ? 0.4 : 1.0
             }
+
+            ToolTip.visible: isDisabled && layer.containsMouse
+            ToolTip.text: "XKB limitation: maximum 4 layouts allowed"
         }
     }
 
@@ -129,7 +132,7 @@ ColumnLayout {
         Layout.rightMargin: Appearance.padding.small
         Layout.topMargin: Appearance.spacing.small
 
-        implicitHeight: 1
+        height: 1
         color: Colours.palette.m3onSurfaceVariant
         opacity: 0.35
     }
@@ -160,18 +163,16 @@ ColumnLayout {
         }
 
         Connections {
+            target: kb
             function onActiveLabelChanged() {
                 if (!activeRow.visible)
                     return;
                 popIn.restart();
             }
-
-            target: kb
         }
 
         SequentialAnimation {
             id: popIn
-
             running: false
 
             ParallelAnimation {

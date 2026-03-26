@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
 import qs.config
+import QtQuick
 
 SequentialAnimation {
     id: root

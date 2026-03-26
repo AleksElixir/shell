@@ -1,9 +1,9 @@
-import QtQuick
+import qs.config
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Pam
-import qs.config
+import QtQuick
 
 Scope {
     id: root
@@ -132,7 +132,7 @@ Scope {
         id: availProc
 
         command: ["sh", "-c", "fprintd-list $USER"]
-        onExited: code => { // qmllint disable signal-handler-parameters
+        onExited: code => {
             fprint.available = code === 0;
             fprint.checkAvail();
         }
@@ -166,6 +166,8 @@ Scope {
     }
 
     Connections {
+        target: root.lock
+
         function onSecureChanged(): void {
             if (root.lock.secure) {
                 availProc.running = true;
@@ -179,15 +181,13 @@ Scope {
         function onUnlock(): void {
             fprint.abort();
         }
-
-        target: root.lock
     }
 
     Connections {
+        target: Config.lock
+
         function onEnableFprintChanged(): void {
             fprint.checkAvail();
         }
-
-        target: Config.lock
     }
 }

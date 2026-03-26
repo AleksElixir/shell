@@ -4,7 +4,6 @@
 #include <qfuture.h>
 #include <qfuturewatcher.h>
 #include <qobject.h>
-#include <qpointer.h>
 #include <qqmlintegration.h>
 
 namespace caelestia {
@@ -49,7 +48,7 @@ private:
     QFutureWatcher<AnalyseResult>* const m_futureWatcher;
 
     QString m_source;
-    QPointer<QQuickItem> m_sourceItem;
+    QQuickItem* m_sourceItem;
     int m_rescaleSize;
 
     QColor m_dominantColour;

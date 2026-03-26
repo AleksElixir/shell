@@ -1,11 +1,11 @@
 pragma Singleton
 
-import QtQuick
+import qs.config
+import Caelestia.Services
+import Caelestia
 import Quickshell
 import Quickshell.Services.Pipewire
-import Caelestia
-import Caelestia.Services
-import qs.config
+import QtQuick
 
 Singleton {
     id: root
@@ -92,7 +92,7 @@ Singleton {
         if (!stream)
             return qsTr("Unknown");
         // Try application name first, then description, then name
-        return stream.properties["application.name"] || stream.description || stream.name || qsTr("Unknown Application");
+        return stream.applicationName || stream.description || stream.name || qsTr("Unknown Application");
     }
 
     onSinkChanged: {
@@ -125,6 +125,8 @@ Singleton {
     }
 
     Connections {
+        target: Pipewire.nodes
+
         function onValuesChanged(): void {
             const newSinks = [];
             const newSources = [];
@@ -145,8 +147,6 @@ Singleton {
             root.sources = newSources;
             root.streams = newStreams;
         }
-
-        target: Pipewire.nodes
     }
 
     PwObjectTracker {

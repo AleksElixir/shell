@@ -1,19 +1,18 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
 import qs.components
-import qs.components.filedialog
 import qs.components.images
+import qs.components.filedialog
 import qs.services
 import qs.config
 import qs.utils
+import QtQuick
 
 Item {
     id: root
 
     property string source: Wallpapers.current
     property Image current: one
-    property bool completed
 
     onSourceChanged: {
         if (!source)
@@ -26,17 +25,13 @@ Item {
 
     Component.onCompleted: {
         if (source)
-            Qt.callLater(() => {
-                one.update();
-                completed = true;
-            });
+            Qt.callLater(() => one.update());
     }
 
     Loader {
-        asynchronous: true
         anchors.fill: parent
 
-        active: root.completed && !root.source
+        active: !root.source
 
         sourceComponent: StyledRect {
             color: Colours.palette.m3surfaceContainer
@@ -79,12 +74,12 @@ Item {
                         }
 
                         StateLayer {
+                            radius: parent.radius
+                            color: Colours.palette.m3onPrimary
+
                             function onClicked(): void {
                                 dialog.open();
                             }
-
-                            radius: parent.radius
-                            color: Colours.palette.m3onPrimary
                         }
 
                         StyledText {

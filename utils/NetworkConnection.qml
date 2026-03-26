@@ -1,7 +1,7 @@
 pragma Singleton
 
-import QtQuick
 import qs.services
+import QtQuick
 
 /**
  * NetworkConnection

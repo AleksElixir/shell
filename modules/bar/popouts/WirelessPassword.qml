@@ -1,77 +1,59 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
-import QtQuick.Layouts
-import Quickshell
 import qs.components
 import qs.components.controls
 import qs.services
 import qs.config
 import qs.utils
+import Quickshell
+import QtQuick
+import QtQuick.Layouts
 
 ColumnLayout {
     id: root
 
-    required property PopoutState popouts
+    required property Item wrapper
     property var network: null
     property bool isClosing: false
 
-    readonly property bool shouldBeVisible: root.popouts.currentName === "wirelesspassword"
+    readonly property bool shouldBeVisible: root.wrapper.currentName === "wirelesspassword"
 
-    function checkConnectionStatus(): void {
-        if (!root.shouldBeVisible || !connectButton.connecting) {
-            return;
-        }
-
-        // Check if we're connected to the target network (case-insensitive SSID comparison)
-        const isConnected = root.network && Nmcli.active && Nmcli.active.ssid && Nmcli.active.ssid.toLowerCase().trim() === root.network.ssid.toLowerCase().trim();
-
-        if (isConnected) {
-            // Successfully connected - give it a moment for network list to update
-            // Use Timer for actual delay
-            connectionSuccessTimer.start();
-            return;
-        }
-
-        // Check for connection failures - if pending connection was cleared but we're not connected
-        if (Nmcli.pendingConnection === null && connectButton.connecting) {
-            // Wait a bit more before giving up (allow time for connection to establish)
-            if (connectionMonitor.repeatCount > 10) {
-                connectionMonitor.stop();
-                connectButton.connecting = false;
-                connectButton.hasError = true;
-                connectButton.enabled = true;
-                connectButton.text = qsTr("Connect");
-                passwordContainer.passwordBuffer = "";
-                // Delete the failed connection
-                if (root.network && root.network.ssid) {
-                    Nmcli.forgetNetwork(root.network.ssid);
-                }
+    Connections {
+        target: root.wrapper
+        function onCurrentNameChanged() {
+            if (root.wrapper.currentName === "wirelesspassword") {
+                // Update network when popout becomes active
+                Qt.callLater(() => {
+                    // Try to get network from parent Content's networkPopout
+                    const content = root.parent?.parent?.parent;
+                    if (content) {
+                        const networkPopout = content.children.find(c => c.name === "network");
+                        if (networkPopout && networkPopout.item) {
+                            root.network = networkPopout.item.passwordNetwork;
+                        }
+                    }
+                    // Force focus to password container when popout becomes active
+                    // Use Timer for actual delay to ensure dialog is fully rendered
+                    focusTimer.start();
+                });
             }
         }
     }
 
-    function closeDialog(): void {
-        if (isClosing) {
-            return;
-        }
-
-        isClosing = true;
-        passwordContainer.passwordBuffer = "";
-        connectButton.connecting = false;
-        connectButton.hasError = false;
-        connectButton.text = qsTr("Connect");
-        connectionMonitor.stop();
-
-        // Return to network popout
-        if (root.popouts.currentName === "wirelesspassword") {
-            root.popouts.currentName = "network";
+    Timer {
+        id: focusTimer
+        interval: 150
+        onTriggered: {
+            root.forceActiveFocus();
+            passwordContainer.forceActiveFocus();
         }
     }
 
     spacing: Appearance.spacing.normal
+
     implicitWidth: 400
     implicitHeight: content.implicitHeight + Appearance.padding.large * 2
+
     visible: shouldBeVisible || isClosing
     enabled: shouldBeVisible && !isClosing
     focus: enabled
@@ -92,49 +74,16 @@ ColumnLayout {
 
     Keys.onEscapePressed: closeDialog()
 
-    Connections {
-        function onCurrentNameChanged() {
-            if (root.popouts.currentName === "wirelesspassword") {
-                // Update network when popout becomes active
-                Qt.callLater(() => {
-                    // Try to get network from parent Content's networkPopout
-                    const content = root.parent?.parent?.parent;
-                    if (content) {
-                        const networkPopout = content.children.find(c => c.name === "network");
-                        if (networkPopout && networkPopout.item) {
-                            root.network = networkPopout.item.passwordNetwork;
-                        }
-                    }
-                    // Force focus to password container when popout becomes active
-                    // Use Timer for actual delay to ensure dialog is fully rendered
-                    focusTimer.start();
-                });
-            }
-        }
-
-        target: root.popouts
-    }
-
-    Timer {
-        id: focusTimer
-
-        interval: 150
-        onTriggered: {
-            root.forceActiveFocus();
-            passwordContainer.forceActiveFocus();
-        }
-    }
-
     StyledRect {
         Layout.fillWidth: true
         Layout.preferredWidth: 400
         implicitHeight: content.implicitHeight + Appearance.padding.large * 2
+
         radius: Appearance.rounding.normal
         color: Colours.tPalette.m3surfaceContainer
         visible: root.shouldBeVisible || root.isClosing
         opacity: root.shouldBeVisible && !root.isClosing ? 1 : 0
         scale: root.shouldBeVisible && !root.isClosing ? 1 : 0.7
-        Keys.onEscapePressed: root.closeDialog()
 
         Behavior on opacity {
             Anim {}
@@ -164,6 +113,8 @@ ColumnLayout {
             }
         }
 
+        Keys.onEscapePressed: root.closeDialog()
+
         ColumnLayout {
             id: content
 
@@ -189,7 +140,6 @@ ColumnLayout {
 
             StyledText {
                 id: networkNameText
-
                 Layout.alignment: Qt.AlignHCenter
                 text: {
                     if (root.network) {
@@ -205,11 +155,10 @@ ColumnLayout {
             }
 
             Timer {
-                property int attempts: 0
-
                 interval: 50
                 running: root.shouldBeVisible && (!root.network || !root.network.ssid)
                 repeat: true
+                property int attempts: 0
                 onTriggered: {
                     attempts++;
                     // Keep trying to get network from Network component
@@ -257,32 +206,20 @@ ColumnLayout {
 
             FocusScope {
                 id: passwordContainer
-
-                property string passwordBuffer: ""
-
                 objectName: "passwordContainer"
                 Layout.topMargin: Appearance.spacing.large
                 Layout.fillWidth: true
                 implicitHeight: Math.max(48, charList.implicitHeight + Appearance.padding.normal * 2)
+
                 focus: true
                 activeFocusOnTab: true
 
-                Component.onCompleted: {
-                    if (root.shouldBeVisible) {
-                        // Use Timer for actual delay to ensure focus works correctly
-                        passwordFocusTimer.start();
-                    }
-                }
+                property string passwordBuffer: ""
 
                 Keys.onPressed: event => {
                     // Ensure we have focus when receiving keyboard input
                     if (!activeFocus) {
                         forceActiveFocus();
-                    }
-
-                    if (event.key === Qt.Key_Escape) {
-                        event.accepted = false;
-                        closeDialog();
                     }
 
                     // Clear error when user starts typing
@@ -303,16 +240,13 @@ ColumnLayout {
                         }
                         event.accepted = true;
                     } else if (event.text && event.text.length > 0) {
-                        if (event.key === Qt.Key_Tab) {
-                            event.accepted = false;
-                            return;
-                        }
                         passwordBuffer += event.text;
                         event.accepted = true;
                     }
                 }
 
                 Connections {
+                    target: root
                     function onShouldBeVisibleChanged(): void {
                         if (root.shouldBeVisible) {
                             // Use Timer for actual delay to ensure focus works correctly
@@ -321,16 +255,20 @@ ColumnLayout {
                             connectButton.hasError = false;
                         }
                     }
-
-                    target: root
                 }
 
                 Timer {
                     id: passwordFocusTimer
-
                     interval: 50
                     onTriggered: {
                         passwordContainer.forceActiveFocus();
+                    }
+                }
+
+                Component.onCompleted: {
+                    if (root.shouldBeVisible) {
+                        // Use Timer for actual delay to ensure focus works correctly
+                        passwordFocusTimer.start();
                     }
                 }
 
@@ -363,13 +301,13 @@ ColumnLayout {
                 }
 
                 StateLayer {
-                    function onClicked(): void {
-                        passwordContainer.forceActiveFocus();
-                    }
-
                     hoverEnabled: false
                     cursorShape: Qt.IBeamCursor
                     radius: Appearance.rounding.normal
+
+                    function onClicked(): void {
+                        passwordContainer.forceActiveFocus();
+                    }
                 }
 
                 StyledText {
@@ -553,14 +491,45 @@ ColumnLayout {
         }
     }
 
+    function checkConnectionStatus(): void {
+        if (!root.shouldBeVisible || !connectButton.connecting) {
+            return;
+        }
+
+        // Check if we're connected to the target network (case-insensitive SSID comparison)
+        const isConnected = root.network && Nmcli.active && Nmcli.active.ssid && Nmcli.active.ssid.toLowerCase().trim() === root.network.ssid.toLowerCase().trim();
+
+        if (isConnected) {
+            // Successfully connected - give it a moment for network list to update
+            // Use Timer for actual delay
+            connectionSuccessTimer.start();
+            return;
+        }
+
+        // Check for connection failures - if pending connection was cleared but we're not connected
+        if (Nmcli.pendingConnection === null && connectButton.connecting) {
+            // Wait a bit more before giving up (allow time for connection to establish)
+            if (connectionMonitor.repeatCount > 10) {
+                connectionMonitor.stop();
+                connectButton.connecting = false;
+                connectButton.hasError = true;
+                connectButton.enabled = true;
+                connectButton.text = qsTr("Connect");
+                passwordContainer.passwordBuffer = "";
+                // Delete the failed connection
+                if (root.network && root.network.ssid) {
+                    Nmcli.forgetNetwork(root.network.ssid);
+                }
+            }
+        }
+    }
+
     Timer {
         id: connectionMonitor
-
-        property int repeatCount: 0
-
         interval: 1000
         repeat: true
         triggeredOnStart: false
+        property int repeatCount: 0
 
         onTriggered: {
             repeatCount++;
@@ -576,7 +545,6 @@ ColumnLayout {
 
     Timer {
         id: connectionSuccessTimer
-
         interval: 500
         onTriggered: {
             // Double-check connection is still active
@@ -587,8 +555,8 @@ ColumnLayout {
                     connectButton.connecting = false;
                     connectButton.text = qsTr("Connect");
                     // Return to network popout on successful connection
-                    if (root.popouts.currentName === "wirelesspassword") {
-                        root.popouts.currentName = "network";
+                    if (root.wrapper.currentName === "wirelesspassword") {
+                        root.wrapper.currentName = "network";
                     }
                     closeDialog();
                 }
@@ -597,12 +565,12 @@ ColumnLayout {
     }
 
     Connections {
+        target: Nmcli
         function onActiveChanged() {
             if (root.shouldBeVisible) {
                 root.checkConnectionStatus();
             }
         }
-
         function onConnectionFailed(ssid: string) {
             if (root.shouldBeVisible && root.network && root.network.ssid === ssid && connectButton.connecting) {
                 connectionMonitor.stop();
@@ -615,7 +583,23 @@ ColumnLayout {
                 Nmcli.forgetNetwork(ssid);
             }
         }
+    }
 
-        target: Nmcli
+    function closeDialog(): void {
+        if (isClosing) {
+            return;
+        }
+
+        isClosing = true;
+        passwordContainer.passwordBuffer = "";
+        connectButton.connecting = false;
+        connectButton.hasError = false;
+        connectButton.text = qsTr("Connect");
+        connectionMonitor.stop();
+
+        // Return to network popout
+        if (root.wrapper.currentName === "wirelesspassword") {
+            root.wrapper.currentName = "network";
+        }
     }
 }

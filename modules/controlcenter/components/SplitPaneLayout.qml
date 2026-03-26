@@ -1,25 +1,27 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
-import QtQuick.Layouts
-import Quickshell.Widgets
 import qs.components
 import qs.components.effects
 import qs.config
+import Quickshell.Widgets
+import QtQuick
+import QtQuick.Layouts
 
 RowLayout {
     id: root
 
+    spacing: 0
+
     property Component leftContent: null
     property Component rightContent: null
+
     property real leftWidthRatio: 0.4
     property int leftMinimumWidth: 420
     property var leftLoaderProperties: ({})
     property var rightLoaderProperties: ({})
+
     property alias leftLoader: leftLoader
     property alias rightLoader: rightLoader
-
-    spacing: 0
 
     Item {
         id: leftPane
@@ -47,7 +49,6 @@ RowLayout {
                 anchors.leftMargin: Appearance.padding.large
                 anchors.rightMargin: Appearance.padding.large + Appearance.padding.normal / 2
 
-                asynchronous: true
                 sourceComponent: root.leftContent
 
                 Component.onCompleted: {
@@ -89,7 +90,6 @@ RowLayout {
                 anchors.fill: parent
                 anchors.margins: Appearance.padding.large * 2
 
-                asynchronous: true
                 sourceComponent: root.rightContent
 
                 Component.onCompleted: {

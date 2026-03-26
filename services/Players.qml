@@ -1,12 +1,12 @@
 pragma Singleton
 
-import QtQml
+import qs.components.misc
+import qs.config
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
+import QtQml
 import Caelestia
-import qs.components.misc
-import qs.config
 
 Singleton {
     id: root
@@ -21,16 +21,16 @@ Singleton {
     }
 
     Connections {
+        target: active
+
         function onPostTrackChanged() {
             if (!Config.utilities.toasts.nowPlaying) {
                 return;
             }
-            if (root.active.trackArtist != "" && root.active.trackTitle != "") {
-                Toaster.toast(qsTr("Now Playing"), qsTr("%1 - %2").arg(root.active.trackArtist).arg(root.active.trackTitle), "music_note");
+            if (active.trackArtist != "" && active.trackTitle != "") {
+                Toaster.toast(qsTr("Now Playing"), qsTr("%1 - %2").arg(active.trackArtist).arg(active.trackTitle), "music_note");
             }
         }
-
-        target: root.active
     }
 
     PersistentProperties {
@@ -41,9 +41,7 @@ Singleton {
         reloadableId: "players"
     }
 
-    // qmllint disable unresolved-type
     CustomShortcut {
-        // qmllint enable unresolved-type
         name: "mediaToggle"
         description: "Toggle media playback"
         onPressed: {
@@ -53,9 +51,7 @@ Singleton {
         }
     }
 
-    // qmllint disable unresolved-type
     CustomShortcut {
-        // qmllint enable unresolved-type
         name: "mediaPrev"
         description: "Previous track"
         onPressed: {
@@ -65,9 +61,7 @@ Singleton {
         }
     }
 
-    // qmllint disable unresolved-type
     CustomShortcut {
-        // qmllint enable unresolved-type
         name: "mediaNext"
         description: "Next track"
         onPressed: {
@@ -77,15 +71,15 @@ Singleton {
         }
     }
 
-    // qmllint disable unresolved-type
     CustomShortcut {
-        // qmllint enable unresolved-type
         name: "mediaStop"
         description: "Stop media playback"
         onPressed: root.active?.stop()
     }
 
     IpcHandler {
+        target: "mpris"
+
         function getActive(prop: string): string {
             const active = root.active;
             return active ? active[prop] ?? "Invalid property" : "No active player";
@@ -128,7 +122,5 @@ Singleton {
         function stop(): void {
             root.active?.stop();
         }
-
-        target: "mpris"
     }
 }

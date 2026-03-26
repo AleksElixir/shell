@@ -2,16 +2,16 @@ pragma ComponentBehavior: Bound
 
 import ".."
 import "../components"
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
 import qs.components
-import qs.components.containers
 import qs.components.controls
 import qs.components.effects
+import qs.components.containers
 import qs.services
 import qs.config
 import qs.utils
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 
 DeviceDetails {
     id: root
@@ -201,10 +201,6 @@ DeviceDetails {
         property string displayName: ""
         property string interfaceName: ""
 
-        function closeWithAnimation(): void {
-            close();
-        }
-
         parent: Overlay.overlay
         anchors.centerIn: parent
         width: Math.min(400, parent.width - Appearance.padding.large * 2)
@@ -248,6 +244,10 @@ DeviceDetails {
                 duration: Appearance.anim.durations.expressiveFastSpatial
                 easing.bezierCurve: Appearance.anim.curves.expressiveFastSpatial
             }
+        }
+
+        function closeWithAnimation(): void {
+            close();
         }
 
         Overlay.modal: Rectangle {
@@ -302,7 +302,6 @@ DeviceDetails {
 
                     StyledTextField {
                         id: displayNameField
-
                         anchors.centerIn: parent
                         width: parent.width - Appearance.padding.normal
                         horizontalAlignment: TextInput.AlignLeft
@@ -339,7 +338,6 @@ DeviceDetails {
 
                     StyledTextField {
                         id: interfaceNameField
-
                         anchors.centerIn: parent
                         width: parent.width - Appearance.padding.normal
                         horizontalAlignment: TextInput.AlignLeft
