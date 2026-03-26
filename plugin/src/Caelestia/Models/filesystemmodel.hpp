@@ -132,7 +132,7 @@ private:
     bool m_recursive;
     bool m_watchChanges;
     bool m_showHidden;
-    bool m_sortReverse = false;
+    bool m_sortReverse;
     Filter m_filter;
     QStringList m_nameFilters;
 

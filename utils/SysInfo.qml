@@ -1,10 +1,10 @@
 pragma Singleton
 
-import QtQuick
-import Quickshell
-import Quickshell.Io
 import qs.config
 import qs.utils
+import Quickshell
+import Quickshell.Io
+import QtQuick
 
 Singleton {
     id: root
@@ -50,11 +50,11 @@ Singleton {
     }
 
     Connections {
+        target: Config.general
+
         function onLogoChanged(): void {
             osRelease.reload();
         }
-
-        target: Config.general
     }
 
     Timer {
