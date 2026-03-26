@@ -2,17 +2,17 @@ pragma ComponentBehavior: Bound
 
 import ".."
 import "../components"
-import QtQuick
-import QtQuick.Layouts
-import Quickshell
-import Quickshell.Widgets
 import qs.components
-import qs.components.containers
 import qs.components.controls
 import qs.components.effects
+import qs.components.containers
 import qs.services
 import qs.config
 import qs.utils
+import Quickshell
+import Quickshell.Widgets
+import QtQuick
+import QtQuick.Layouts
 
 Item {
     id: root
@@ -40,6 +40,8 @@ Item {
     property bool showStorage: Config.dashboard.performance.showStorage ?? true
     property bool showNetwork: Config.dashboard.performance.showNetwork ?? true
 
+    anchors.fill: parent
+
     function saveConfig() {
         Config.dashboard.enabled = root.enabled;
         Config.dashboard.showOnHover = root.showOnHover;
@@ -60,11 +62,8 @@ Item {
         Config.save();
     }
 
-    anchors.fill: parent
-
     ClippingRectangle {
         id: dashboardClippingRect
-
         anchors.fill: parent
         anchors.margins: Appearance.padding.normal
         anchors.leftMargin: 0
@@ -81,14 +80,12 @@ Item {
             anchors.leftMargin: Appearance.padding.large
             anchors.rightMargin: Appearance.padding.large
 
-            asynchronous: true
             sourceComponent: dashboardContentComponent
         }
     }
 
     InnerBorder {
         id: dashboardBorder
-
         leftThickness: 0
         rightThickness: Appearance.padding.normal
     }
@@ -98,7 +95,6 @@ Item {
 
         StyledFlickable {
             id: dashboardFlickable
-
             flickableDirection: Flickable.VerticalFlick
             contentHeight: dashboardLayout.height
 
@@ -108,7 +104,6 @@ Item {
 
             ColumnLayout {
                 id: dashboardLayout
-
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top

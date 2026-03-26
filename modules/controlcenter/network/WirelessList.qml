@@ -3,27 +3,21 @@ pragma ComponentBehavior: Bound
 import ".."
 import "../components"
 import "."
-import QtQuick
-import QtQuick.Layouts
-import Quickshell
 import qs.components
-import qs.components.containers
 import qs.components.controls
+import qs.components.containers
 import qs.components.effects
 import qs.services
 import qs.config
 import qs.utils
+import Quickshell
+import QtQuick
+import QtQuick.Layouts
 
 DeviceList {
     id: root
 
     required property Session session
-
-    function checkSavedProfileForNetwork(ssid: string): void {
-        if (ssid && ssid.length > 0) {
-            Nmcli.loadSavedConnections(() => {});
-        }
-    }
 
     title: qsTr("Networks (%1)").arg(Nmcli.networks.length)
     description: qsTr("All available WiFi networks")
@@ -110,7 +104,6 @@ DeviceList {
             required property var modelData
 
             width: ListView.view ? ListView.view.width : undefined
-            implicitHeight: rowLayout.implicitHeight + Appearance.padding.normal * 2
 
             color: Qt.alpha(Colours.tPalette.m3surfaceContainer, root.activeItem === modelData ? Colours.tPalette.m3surfaceContainer.a : 0)
             radius: Appearance.rounding.normal
@@ -215,6 +208,8 @@ DeviceList {
                     }
                 }
             }
+
+            implicitHeight: rowLayout.implicitHeight + Appearance.padding.normal * 2
         }
     }
 
@@ -222,6 +217,12 @@ DeviceList {
         session.network.active = item;
         if (item && item.ssid) {
             checkSavedProfileForNetwork(item.ssid);
+        }
+    }
+
+    function checkSavedProfileForNetwork(ssid: string): void {
+        if (ssid && ssid.length > 0) {
+            Nmcli.loadSavedConnections(() => {});
         }
     }
 }

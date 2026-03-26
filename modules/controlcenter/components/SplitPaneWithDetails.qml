@@ -1,13 +1,13 @@
 pragma ComponentBehavior: Bound
 
 import ".."
+import qs.components
+import qs.components.effects
+import qs.components.containers
+import qs.config
+import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Widgets
-import qs.components
-import qs.components.containers
-import qs.components.effects
-import qs.config
 
 Item {
     id: root
@@ -48,17 +48,11 @@ Item {
                     nextComponent = targetComponent;
                 }
 
-                onPaneChanged: {
-                    nextComponent = getComponentForPane();
-                    paneId = root.paneIdGenerator(pane);
-                }
-
                 Loader {
                     id: rightLoader
 
                     anchors.fill: parent
 
-                    asynchronous: true
                     opacity: 1
                     scale: 1
                     transformOrigin: Item.Center
@@ -79,6 +73,11 @@ Item {
                         ]
                     }
                 }
+
+                onPaneChanged: {
+                    nextComponent = getComponentForPane();
+                    paneId = root.paneIdGenerator(pane);
+                }
             }
         }
     }
@@ -87,7 +86,6 @@ Item {
         id: overlayLoader
 
         anchors.fill: parent
-        asynchronous: true
         z: 1000
         sourceComponent: root.overlayComponent
         active: root.overlayComponent !== null

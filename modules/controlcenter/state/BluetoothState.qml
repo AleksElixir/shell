@@ -1,5 +1,5 @@
-import QtQuick
 import Quickshell.Bluetooth
+import QtQuick
 
 QtObject {
     id: root

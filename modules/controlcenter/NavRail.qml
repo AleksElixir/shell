@@ -1,12 +1,12 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
-import QtQuick.Layouts
-import Quickshell
 import qs.components
 import qs.services
 import qs.config
 import qs.modules.controlcenter
+import Quickshell
+import QtQuick
+import QtQuick.Layouts
 
 Item {
     id: root
@@ -43,7 +43,6 @@ Item {
 
         Loader {
             Layout.topMargin: Appearance.spacing.large
-            asynchronous: true
             active: !root.session.floating
             visible: active
 
@@ -59,6 +58,8 @@ Item {
                 StateLayer {
                     id: normalWinState
 
+                    color: Colours.palette.m3onPrimaryContainer
+
                     function onClicked(): void {
                         root.session.root.close();
                         WindowFactory.create(null, {
@@ -66,8 +67,6 @@ Item {
                             navExpanded: root.session.navExpanded
                         });
                     }
-
-                    color: Colours.palette.m3onPrimaryContainer
                 }
 
                 MaterialIcon {
@@ -122,7 +121,6 @@ Item {
 
             NavItem {
                 required property int index
-
                 Layout.topMargin: index === 0 ? Appearance.spacing.large * 2 : 0
                 icon: PaneRegistry.getByIndex(index).icon
                 label: PaneRegistry.getByIndex(index).label
@@ -176,6 +174,8 @@ Item {
             implicitHeight: icon.implicitHeight + Appearance.padding.small
 
             StateLayer {
+                color: item.active ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+
                 function onClicked(): void {
                     // Prevent tab switching during initial opening animation to avoid blank pages
                     if (!root.initialOpeningComplete) {
@@ -183,8 +183,6 @@ Item {
                     }
                     root.session.active = item.label;
                 }
-
-                color: item.active ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
             }
 
             MaterialIcon {
