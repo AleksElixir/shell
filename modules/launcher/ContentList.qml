@@ -1,27 +1,30 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
 import qs.components
 import qs.components.controls
 import qs.services
 import qs.config
 import qs.utils
+import Quickshell
+import QtQuick
 
 Item {
     id: root
 
     required property var content
-    required property DrawerVisibilities visibilities
+    required property PersistentProperties visibilities
     required property var panels
     required property real maxHeight
     required property StyledTextField search
     required property int padding
     required property int rounding
+    required property string activeCategory
 
     readonly property bool showWallpapers: search.text.startsWith(`${Config.launcher.actionPrefix}wallpaper `)
-    readonly property var currentList: showWallpapers ? wallpaperList.item : appList.item // Can be either ListView or PathView, so can't type properly
+    readonly property Item currentList: showWallpapers ? wallpaperList.item : appList.item
 
     anchors.horizontalCenter: parent.horizontalCenter
+    anchors.top: parent.top
     anchors.bottom: parent.bottom
 
     clip: true
@@ -73,6 +76,9 @@ Item {
         }
     }
 
+    property var showContextMenuAt: null
+    property Item wrapperRoot: null
+    
     Loader {
         id: appList
 
@@ -83,13 +89,15 @@ Item {
         sourceComponent: AppList {
             search: root.search
             visibilities: root.visibilities
+            activeCategory: root.activeCategory
+            showContextMenuAt: root.showContextMenuAt
+            wrapperRoot: root.wrapperRoot
         }
     }
 
     Loader {
         id: wallpaperList
 
-        asynchronous: true
         active: false
 
         anchors.top: parent.top

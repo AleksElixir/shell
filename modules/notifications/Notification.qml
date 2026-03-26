@@ -1,21 +1,21 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
-import QtQuick.Layouts
-import QtQuick.Shapes
-import Quickshell
-import Quickshell.Widgets
-import Quickshell.Services.Notifications
 import qs.components
 import qs.components.effects
 import qs.services
 import qs.config
 import qs.utils
+import Quickshell
+import Quickshell.Widgets
+import Quickshell.Services.Notifications
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Shapes
 
 StyledRect {
     id: root
 
-    required property NotifData modelData
+    required property Notifs.Notif modelData
     readonly property bool hasImage: modelData.image.length > 0
     readonly property bool hasAppIcon: modelData.appIcon.length > 0
     readonly property int bodyTextFormat: /[<*_`#\[\]]/.test(modelData.body) ? Text.MarkdownText : Text.PlainText
@@ -85,7 +85,7 @@ StyledRect {
                 return;
 
             const actions = root.modelData.actions;
-            if (actions.length === 1)
+            if (actions?.length === 1)
                 actions[0].invoke();
         }
 
@@ -109,7 +109,6 @@ StyledRect {
             Loader {
                 id: image
 
-                asynchronous: true
                 active: root.hasImage
 
                 anchors.left: parent.left
@@ -138,7 +137,6 @@ StyledRect {
             Loader {
                 id: appIcon
 
-                asynchronous: true
                 active: root.hasAppIcon || !root.hasImage
 
                 anchors.horizontalCenter: root.hasImage ? undefined : image.horizontalCenter
@@ -155,7 +153,6 @@ StyledRect {
                     Loader {
                         id: icon
 
-                        asynchronous: true
                         active: root.hasAppIcon
 
                         anchors.centerIn: parent
@@ -172,7 +169,6 @@ StyledRect {
                     }
 
                     Loader {
-                        asynchronous: true
                         active: !root.hasAppIcon
                         anchors.centerIn: parent
                         anchors.horizontalCenterOffset: -Appearance.font.size.large * 0.02
@@ -361,12 +357,12 @@ StyledRect {
                 implicitHeight: expandIcon.height
 
                 StateLayer {
+                    radius: Appearance.rounding.full
+                    color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+
                     function onClicked() {
                         root.expanded = !root.expanded;
                     }
-
-                    radius: Appearance.rounding.full
-                    color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
                 }
 
                 MaterialIcon {
@@ -460,7 +456,6 @@ StyledRect {
                 Action {
                     modelData: QtObject {
                         readonly property string text: qsTr("Close")
-
                         function invoke(): void {
                             root.modelData.close();
                         }
@@ -492,12 +487,12 @@ StyledRect {
         implicitHeight: actionText.height + Appearance.padding.small * 2
 
         StateLayer {
+            radius: Appearance.rounding.full
+            color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondary : Colours.palette.m3onSurface
+
             function onClicked(): void {
                 action.modelData.invoke();
             }
-
-            radius: Appearance.rounding.full
-            color: root.modelData.urgency === NotificationUrgency.Critical ? Colours.palette.m3onSecondary : Colours.palette.m3onSurface
         }
 
         StyledText {

@@ -1,21 +1,21 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
-import QtQuick.Layouts
-import Quickshell
-import Quickshell.Widgets
 import qs.components
-import qs.components.containers
 import qs.components.controls
+import qs.components.containers
 import qs.components.effects
 import qs.services
 import qs.config
+import Quickshell
+import Quickshell.Widgets
+import QtQuick
+import QtQuick.Layouts
 
 Item {
     id: root
 
     required property Props props
-    required property DrawerVisibilities visibilities
+    required property var visibilities
     readonly property int notifCount: Notifs.list.reduce((acc, n) => n.closed ? acc : acc + 1, 0)
 
     anchors.fill: parent
@@ -86,7 +86,6 @@ Item {
         color: "transparent"
 
         Loader {
-            asynchronous: true
             anchors.centerIn: parent
             active: opacity > 0
             opacity: root.notifCount > 0 ? 0 : 1
@@ -96,7 +95,7 @@ Item {
 
                 Image {
                     asynchronous: true
-                    source: Quickshell.shellPath("assets/dino.png")
+                    source: Qt.resolvedUrl(`${Quickshell.shellDir}/assets/dino.png`)
                     fillMode: Image.PreserveAspectFit
                     sourceSize.width: clipRect.width * 0.8
 
@@ -156,19 +155,17 @@ Item {
             let next = null;
             for (let i = 0; i < notifList.repeater.count; i++) {
                 next = notifList.repeater.itemAt(i);
-                if (!next?.closed) // qmllint disable missing-property
+                if (!next?.closed)
                     break;
             }
-            if (next) {
-                next.closeAll(); // qmllint disable missing-property
-            } else {
+            if (next)
+                next.closeAll();
+            else
                 stop();
-            }
         }
     }
 
     Loader {
-        asynchronous: true
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.margins: Appearance.padding.normal

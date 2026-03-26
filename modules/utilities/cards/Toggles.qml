@@ -1,19 +1,18 @@
-pragma ComponentBehavior: Bound
-
-import QtQuick
-import QtQuick.Layouts
-import Quickshell.Bluetooth
 import qs.components
 import qs.components.controls
 import qs.services
 import qs.config
-import qs.modules.bar.popouts as BarPopouts
+import qs.modules.controlcenter
+import Quickshell
+import Quickshell.Bluetooth
+import QtQuick
+import QtQuick.Layouts
 
 StyledRect {
     id: root
 
-    required property DrawerVisibilities visibilities
-    required property BarPopouts.Wrapper popouts
+    required property var visibilities
+    required property Item popouts
 
     readonly property var quickToggles: {
         const seenIds = new Set();
@@ -21,13 +20,15 @@ StyledRect {
         return Config.utilities.quickToggles.filter(item => {
             if (!item.enabled)
                 return false;
-
+            
             if (seenIds.has(item.id)) {
                 return false;
             }
 
             if (item.id === "vpn") {
-                return Config.utilities.vpn.provider.some(p => typeof p === "object" ? (p.enabled === true) : false);
+                return Config.utilities.vpn.provider.some(p => 
+                    typeof p === "object" ? (p.enabled === true) : false
+                );
             }
 
             seenIds.add(item.id);
@@ -55,17 +56,17 @@ StyledRect {
             font.pointSize: Appearance.font.size.normal
         }
 
-        QuickToggleRow {
+        ToggleRow {
             rowModel: root.needExtraRow ? root.quickToggles.slice(0, root.splitIndex) : root.quickToggles
         }
 
-        QuickToggleRow {
+        ToggleRow {
             visible: root.needExtraRow
             rowModel: root.needExtraRow ? root.quickToggles.slice(root.splitIndex) : []
         }
     }
 
-    component QuickToggleRow: RowLayout {
+    component ToggleRow: RowLayout {
         property var rowModel: []
 
         Layout.fillWidth: true
@@ -89,9 +90,9 @@ StyledRect {
                     roleValue: "bluetooth"
                     delegate: Toggle {
                         icon: "bluetooth"
-                        checked: Bluetooth.defaultAdapter?.enabled ?? false // qmllint disable unresolved-type
+                        checked: Bluetooth.defaultAdapter?.enabled ?? false
                         onClicked: {
-                            const adapter = Bluetooth.defaultAdapter; // qmllint disable unresolved-type
+                            const adapter = Bluetooth.defaultAdapter;
                             if (adapter)
                                 adapter.enabled = !adapter.enabled;
                         }

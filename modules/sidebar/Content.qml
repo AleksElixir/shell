@@ -1,14 +1,14 @@
-import QtQuick
-import QtQuick.Layouts
 import qs.components
 import qs.services
 import qs.config
+import QtQuick
+import QtQuick.Layouts
 
 Item {
     id: root
 
     required property Props props
-    required property DrawerVisibilities visibilities
+    required property var visibilities
 
     ColumnLayout {
         id: layout

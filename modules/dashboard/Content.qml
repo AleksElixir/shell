@@ -1,27 +1,18 @@
 pragma ComponentBehavior: Bound
 
-import QtQuick
-import QtQuick.Layouts
-import Quickshell
-import Quickshell.Widgets
 import qs.components
 import qs.components.filedialog
 import qs.config
+import Quickshell
+import Quickshell.Widgets
+import QtQuick
+import QtQuick.Layouts
 
 Item {
     id: root
 
-    required property DrawerVisibilities visibilities
-    readonly property bool needsKeyboard: {
-        const count = repeater.count;
-        for (let i = 0; i < count; i++) {
-            const item = repeater.itemAt(i) as Loader;
-            if (item?.sourceComponent === mediaComponent && (item?.item as MediaWrapper)?.needsKeyboard)
-                return true;
-        }
-        return false;
-    }
-    required property DashboardState state
+    required property PersistentProperties visibilities
+    required property PersistentProperties state
     required property FileDialog facePicker
 
     readonly property var dashboardTabs: {
@@ -90,24 +81,21 @@ Item {
             id: view
 
             readonly property int currentIndex: root.state.currentTab
-            readonly property Item currentItem: {
-                repeater.count; // Trigger update on count change
-                return repeater.itemAt(currentIndex);
-            }
+            readonly property Item currentItem: row.children[currentIndex]
 
             anchors.fill: parent
 
             flickableDirection: Flickable.HorizontalFlick
 
-            implicitWidth: currentItem?.implicitWidth ?? 0
-            implicitHeight: currentItem?.implicitHeight ?? 0
+            implicitWidth: currentItem.implicitWidth
+            implicitHeight: currentItem.implicitHeight
 
-            contentX: currentItem?.x ?? 0
+            contentX: currentItem.x
             contentWidth: row.implicitWidth
             contentHeight: row.implicitHeight
 
             onContentXChanged: {
-                if (!moving || !currentItem)
+                if (!moving)
                     return;
 
                 const x = contentX - currentItem.x;
@@ -118,24 +106,19 @@ Item {
             }
 
             onDragEnded: {
-                if (!currentItem)
-                    return;
-
                 const x = contentX - currentItem.x;
                 if (x > currentItem.implicitWidth / 10)
                     root.state.currentTab = Math.min(root.state.currentTab + 1, tabs.count - 1);
                 else if (x < -currentItem.implicitWidth / 10)
                     root.state.currentTab = Math.max(root.state.currentTab - 1, 0);
                 else
-                    contentX = Qt.binding(() => currentItem?.x ?? 0);
+                    contentX = Qt.binding(() => currentItem.x);
             }
 
             RowLayout {
                 id: row
 
                 Repeater {
-                    id: repeater
-
                     model: ScriptModel {
                         values: root.dashboardTabs
                     }
@@ -163,7 +146,6 @@ Item {
 
             Component {
                 id: dashComponent
-
                 Dash {
                     visibilities: root.visibilities
                     state: root.state
@@ -173,22 +155,19 @@ Item {
 
             Component {
                 id: mediaComponent
-
-                MediaWrapper {
+                Media {
                     visibilities: root.visibilities
                 }
             }
 
             Component {
                 id: performanceComponent
-
                 Performance {}
             }
 
             Component {
                 id: weatherComponent
-
-                WeatherTab {}
+                Weather {}
             }
 
             Behavior on contentX {

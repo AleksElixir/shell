@@ -1,30 +1,51 @@
-import QtQuick
-import Quickshell
-import Quickshell.Widgets
+pragma NativeMethodBehavior: AcceptThisObject
+
+import "../services"
 import qs.components
 import qs.services
 import qs.config
 import qs.utils
-import qs.modules.launcher.services
+import Quickshell
+import Quickshell.Widgets
+import QtQuick
 
 Item {
     id: root
 
     required property DesktopEntry modelData
-    required property DrawerVisibilities visibilities
-
+    required property PersistentProperties visibilities
+    property var showContextMenuAt: null
+    property Item wrapperRoot: null
+    
     implicitHeight: Config.launcher.sizes.itemHeight
 
     anchors.left: parent?.left
     anchors.right: parent?.right
 
     StateLayer {
-        function onClicked(): void {
-            Apps.launch(root.modelData);
-            root.visibilities.launcher = false;
-        }
-
+        id: stateLayer
         radius: Appearance.rounding.normal
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        
+        function onClicked(event): void {
+            if (event.button === Qt.LeftButton) {
+                Apps.launch(root.modelData);
+                root.visibilities.launcher = false;
+            } else if (event.button === Qt.RightButton) {
+                if (!root.showContextMenuAt || !root.wrapperRoot || !root.modelData) {
+                    return;
+                }
+                
+                try {
+                    const pos = stateLayer.mapToItem(root.wrapperRoot, event.x, event.y);
+                    if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
+                        root.showContextMenuAt(root.modelData, pos.x, pos.y);
+                    }
+                } catch (error) {
+                    console.error("Failed to show context menu:", error);
+                }
+            }
+        }
     }
 
     Item {
@@ -36,7 +57,6 @@ Item {
         IconImage {
             id: icon
 
-            asynchronous: true
             source: Quickshell.iconPath(root.modelData?.icon, "image-missing")
             implicitSize: parent.height * 0.8
 
@@ -75,10 +95,9 @@ Item {
         Loader {
             id: favouriteIcon
 
-            asynchronous: true
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: parent.right
-            active: root.modelData && Strings.testRegexList(Config.launcher.favouriteApps, root.modelData.id)
+            active: modelData && Strings.testRegexList(Config.launcher.favouriteApps, modelData.id)
 
             sourceComponent: MaterialIcon {
                 text: "favorite"
